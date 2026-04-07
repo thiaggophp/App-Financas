@@ -1,76 +1,166 @@
-import{openDB}from"idb";
-const DB="financas-v3",VER=3;
-async function getDB(){
-  return openDB(DB,VER,{upgrade(db,oldV){
-    if(!db.objectStoreNames.contains("accounts")){const s=db.createObjectStore("accounts",{keyPath:"email"});s.createIndex("status","status")}
-    if(!db.objectStoreNames.contains("groups")){const s=db.createObjectStore("groups",{keyPath:"id"});s.createIndex("ownerEmail","ownerEmail")}
-    if(!db.objectStoreNames.contains("members")){const s=db.createObjectStore("members",{keyPath:"id"});s.createIndex("groupId","groupId");s.createIndex("ownerEmail","ownerEmail")}
-    if(!db.objectStoreNames.contains("entries")){const s=db.createObjectStore("entries",{keyPath:"id"});s.createIndex("ownerEmail","ownerEmail");s.createIndex("month","month")}
-    if(!db.objectStoreNames.contains("goals")){const s=db.createObjectStore("goals",{keyPath:"id"});s.createIndex("ownerEmail","ownerEmail")}
-    if(!db.objectStoreNames.contains("signup_requests")){db.createObjectStore("signup_requests",{keyPath:"email"})}
-    if(!db.objectStoreNames.contains("config")){db.createObjectStore("config")}
-  }});
-}
+import PocketBase from "pocketbase";
+
+const PB_URL = import.meta.env.VITE_PB_URL || "https://api.financascasa.online";
+export const pb = new PocketBase(PB_URL);
 
 // ─── ACCOUNTS ───
-export async function getAccount(email){const db=await getDB();return db.get("accounts",email)}
-export async function getAllAccounts(){const db=await getDB();return db.getAll("accounts")}
-export async function saveAccount(acc){const db=await getDB();await db.put("accounts",acc)}
-export async function deleteAccount(email){const db=await getDB();await db.delete("accounts",email)}
+export async function getAccount(email) {
+  try {
+    const res = await pb.collection("accounts").getFirstListItem(`email="${email}"`);
+    return res;
+  } catch { return null; }
+}
+export async function getAllAccounts() {
+  try { return await pb.collection("accounts").getFullList(); }
+  catch { return []; }
+}
+export async function saveAccount(acc) {
+  try {
+    const existing = await pb.collection("accounts").getFirstListItem(`email="${acc.email}"`).catch(() => null);
+    if (existing) {
+      return await pb.collection("accounts").update(existing.id, acc);
+    } else {
+      return await pb.collection("accounts").create(acc);
+    }
+  } catch (e) { throw e; }
+}
+export async function deleteAccount(email) {
+  try {
+    const rec = await pb.collection("accounts").getFirstListItem(`email="${email}"`);
+    await pb.collection("accounts").delete(rec.id);
+  } catch {}
+}
+export async function getSubUsers(parentEmail) {
+  try { return await pb.collection("accounts").getFullList({ filter: `parentEmail="${parentEmail}"` }); }
+  catch { return []; }
+}
 
 // ─── SIGNUP REQUESTS ───
-export async function getSignupRequests(){const db=await getDB();return db.getAll("signup_requests")}
-export async function addSignupRequest(req){const db=await getDB();await db.put("signup_requests",req)}
-export async function deleteSignupRequest(email){const db=await getDB();await db.delete("signup_requests",email)}
+export async function getSignupRequests() {
+  try { return await pb.collection("signup_requests").getFullList(); }
+  catch { return []; }
+}
+export async function addSignupRequest(req) {
+  try {
+    const existing = await pb.collection("signup_requests").getFirstListItem(`email="${req.email}"`).catch(() => null);
+    if (existing) return;
+    await pb.collection("signup_requests").create(req);
+  } catch {}
+}
+export async function deleteSignupRequest(email) {
+  try {
+    const rec = await pb.collection("signup_requests").getFirstListItem(`email="${email}"`);
+    await pb.collection("signup_requests").delete(rec.id);
+  } catch {}
+}
 
 // ─── GROUPS ───
-export async function getGroups(ownerEmail){const db=await getDB();return db.getAllFromIndex("groups","ownerEmail",ownerEmail)}
-export async function saveGroup(g){const db=await getDB();await db.put("groups",g)}
-export async function deleteGroup(id){const db=await getDB();await db.delete("groups",id)}
+export async function getGroups(ownerEmail) {
+  try { return await pb.collection("groups").getFullList({ filter: `ownerEmail="${ownerEmail}"` }); }
+  catch { return []; }
+}
+export async function saveGroup(g) {
+  try {
+    if (g.id && g.id.length === 15) {
+      return await pb.collection("groups").update(g.id, g);
+    }
+    const existing = await pb.collection("groups").getFirstListItem(`ownerEmail="${g.ownerEmail}" && name="${g.name}"`).catch(() => null);
+    if (existing && (!g.id || existing.id === g.id)) {
+      return await pb.collection("groups").update(existing.id, g);
+    }
+    const created = await pb.collection("groups").create(g);
+    g.id = created.id;
+    return created;
+  } catch (e) { throw e; }
+}
+export async function deleteGroup(id) {
+  try { await pb.collection("groups").delete(id); } catch {}
+}
 
 // ─── MEMBERS ───
-export async function getMembers(ownerEmail){const db=await getDB();return db.getAllFromIndex("members","ownerEmail",ownerEmail)}
-export async function getMembersByGroup(groupId){const db=await getDB();return db.getAllFromIndex("members","groupId",groupId)}
-export async function saveMember(m){const db=await getDB();await db.put("members",m)}
-export async function deleteMember(id){const db=await getDB();await db.delete("members",id)}
+export async function getMembers(ownerEmail) {
+  try { return await pb.collection("members").getFullList({ filter: `ownerEmail="${ownerEmail}"` }); }
+  catch { return []; }
+}
+export async function getMembersByGroup(groupId) {
+  try { return await pb.collection("members").getFullList({ filter: `groupId="${groupId}"` }); }
+  catch { return []; }
+}
+export async function saveMember(m) {
+  try {
+    if (m.id && m.id.length === 15) {
+      return await pb.collection("members").update(m.id, m);
+    }
+    const created = await pb.collection("members").create(m);
+    m.id = created.id;
+    return created;
+  } catch (e) { throw e; }
+}
+export async function deleteMember(id) {
+  try { await pb.collection("members").delete(id); } catch {}
+}
 
 // ─── ENTRIES ───
-export async function getEntries(ownerEmail){const db=await getDB();return db.getAllFromIndex("entries","ownerEmail",ownerEmail)}
-export async function saveEntry(e){const db=await getDB();await db.put("entries",e)}
-export async function deleteEntry(id){const db=await getDB();await db.delete("entries",id)}
+export async function getEntries(ownerEmail) {
+  try { return await pb.collection("entries").getFullList({ filter: `ownerEmail="${ownerEmail}"` }); }
+  catch { return []; }
+}
+export async function saveEntry(e) {
+  try {
+    if (e.id && e.id.length === 15) {
+      return await pb.collection("entries").update(e.id, e);
+    }
+    const created = await pb.collection("entries").create(e);
+    e.id = created.id;
+    return created;
+  } catch (err) { throw err; }
+}
+export async function deleteEntry(id) {
+  try { await pb.collection("entries").delete(id); } catch {}
+}
 
 // ─── GOALS ───
-export async function getGoals(ownerEmail){const db=await getDB();return db.getAllFromIndex("goals","ownerEmail",ownerEmail)}
-export async function saveGoal(g){const db=await getDB();await db.put("goals",g)}
-export async function deleteGoal(id){const db=await getDB();await db.delete("goals",id)}
-
-// ─── CONFIG ───
-export async function getConfig(key){const db=await getDB();return db.get("config",key)}
-export async function saveConfig(key,val){const db=await getDB();await db.put("config",val,key)}
+export async function getGoals(ownerEmail) {
+  try { return await pb.collection("goals").getFullList({ filter: `ownerEmail="${ownerEmail}"` }); }
+  catch { return []; }
+}
+export async function saveGoal(g) {
+  try {
+    if (g.id && g.id.length === 15) {
+      return await pb.collection("goals").update(g.id, g);
+    }
+    const created = await pb.collection("goals").create(g);
+    g.id = created.id;
+    return created;
+  } catch (e) { throw e; }
+}
+export async function deleteGoal(id) {
+  try { await pb.collection("goals").delete(id); } catch {}
+}
 
 // ─── BACKUP ───
-export async function exportAllData(ownerEmail){
-  const entries=await getEntries(ownerEmail);const goals=await getGoals(ownerEmail);
-  const groups=await getGroups(ownerEmail);const members=await getMembers(ownerEmail);
-  return{appName:"Financas",version:3,exportDate:new Date().toISOString(),ownerEmail,entries,goals,groups,members};
+export async function exportAllData(ownerEmail) {
+  const entries = await getEntries(ownerEmail);
+  const goals = await getGoals(ownerEmail);
+  const groups = await getGroups(ownerEmail);
+  const members = await getMembers(ownerEmail);
+  return { appName: "Financas", version: 4, exportDate: new Date().toISOString(), ownerEmail, entries, goals, groups, members };
 }
-export async function importAllData(data){
-  const db=await getDB();
-  if(data.entries)for(const e of data.entries)await db.put("entries",e);
-  if(data.goals)for(const g of data.goals)await db.put("goals",g);
-  if(data.groups)for(const g of data.groups)await db.put("groups",g);
-  if(data.members)for(const m of data.members)await db.put("members",m);
+export async function importAllData(data) {
+  for (const e of data.entries || []) { e.id = null; await saveEntry(e); }
+  for (const g of data.goals || []) { g.id = null; await saveGoal(g); }
+  for (const g of data.groups || []) { g.id = null; await saveGroup(g); }
+  for (const m of data.members || []) { m.id = null; await saveMember(m); }
 }
 
 // ─── INIT ADMIN ───
-export async function initAdmin(){
-  const adminEmail=import.meta.env.VITE_ADMIN_EMAIL||"thiaggotx@gmail.com";
-  const adminPass=import.meta.env.VITE_ADMIN_PASSWORD||"";
-  const admin=await getAccount(adminEmail);
-  if(!admin){
-    await saveAccount({email:adminEmail,name:"Admin",password:adminPass,role:"admin",status:"active",createdAt:new Date().toISOString(),mustChangePassword:false,protected:true});
-  }
+export async function initAdmin() {
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || "";
+  const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || "";
+  try {
+    const existing = await getAccount(adminEmail);
+    if (!existing) {
+      await saveAccount({ email: adminEmail, name: "Admin", password: adminPass, role: "admin", status: "active", mustChangePassword: false, protected: true, parentEmail: "" });
+    }
+  } catch {}
 }
-
-// ─── SUB-USERS (membros com login) ───
-export async function getSubUsers(parentEmail){const db=await getDB();const all=await db.getAll("accounts");return all.filter(a=>a.parentEmail===parentEmail)}

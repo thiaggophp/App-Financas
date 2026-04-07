@@ -17,8 +17,7 @@
 - **SSL:** Let's Encrypt (renova automaticamente via certbot)
 
 ## Acesso SSH ao VPS
-A chave privada está em `C:\Users\Thiago.SYGMA\.ssh\financas_vps`.
-Em outro computador: copie a chave privada para `~/.ssh/financas_vps` e conecte via SSH ao IP do VPS (disponível no painel da Locaweb).
+A chave privada SSH está salva localmente (não commitada). O IP do VPS está no painel da Locaweb e no secret `VPS_HOST` do GitHub Actions.
 
 ## Estrutura
 ```

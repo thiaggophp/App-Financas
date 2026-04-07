@@ -15,14 +15,12 @@ export async function getAllAccounts() {
   catch { return []; }
 }
 export async function saveAccount(acc) {
-  try {
-    const existing = await pb.collection("accounts").getFirstListItem(`email="${acc.email}"`).catch(() => null);
-    if (existing) {
-      return await pb.collection("accounts").update(existing.id, acc);
-    } else {
-      return await pb.collection("accounts").create(acc);
-    }
-  } catch (e) { throw e; }
+  const existing = await pb.collection("accounts").getFirstListItem(`email="${acc.email}"`).catch(() => null);
+  if (existing) {
+    return await pb.collection("accounts").update(existing.id, acc);
+  } else {
+    return await pb.collection("accounts").create(acc);
+  }
 }
 export async function deleteAccount(email) {
   try {
@@ -41,11 +39,9 @@ export async function getSignupRequests() {
   catch { return []; }
 }
 export async function addSignupRequest(req) {
-  try {
-    const existing = await pb.collection("signup_requests").getFirstListItem(`email="${req.email}"`).catch(() => null);
-    if (existing) return;
-    await pb.collection("signup_requests").create(req);
-  } catch {}
+  const existing = await pb.collection("signup_requests").getFirstListItem(`email="${req.email}"`).catch(() => null);
+  if (existing) return;
+  await pb.collection("signup_requests").create(req);
 }
 export async function deleteSignupRequest(email) {
   try {

@@ -39,10 +39,12 @@ export default function Login({onLogin}){
     const e=email.trim().toLowerCase();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){setMsg({t:"error",m:"E-mail inválido"});return}
     setLoading(true);
-    const existing=await getAccount(e);
-    if(existing){setMsg({t:"error",m:"E-mail já cadastrado"});setLoading(false);return}
-    await addSignupRequest({email:e,name:name.trim(),requestedAt:new Date().toISOString(),status:"pending"});
-    setMsg({t:"success",m:"Solicitação enviada! Aguarde aprovação do administrador."});setMode("login");
+    try{
+      const existing=await getAccount(e);
+      if(existing){setMsg({t:"error",m:"E-mail já cadastrado"});setLoading(false);return}
+      await addSignupRequest({email:e,name:name.trim(),requestedAt:new Date().toISOString(),status:"pending"});
+      setMsg({t:"success",m:"Solicitação enviada! Aguarde aprovação do administrador."});setMode("login");
+    }catch(err){setMsg({t:"error",m:"Erro ao enviar solicitação: "+err.message});}
     setLoading(false);
   };
 

@@ -28,14 +28,29 @@ export default function App(){
 
   useEffect(()=>{(async()=>{
     await initAdmin();
-    try{const saved=sessionStorage.getItem("financas_user");if(saved){const acc=JSON.parse(saved);const fresh=await getAccount(acc.email);if(fresh&&fresh.status==="active"){setUser(fresh);if(fresh.mustChangePassword)setChangePassModal(true);}}}catch{}
+    try{
+      const saved=sessionStorage.getItem("financas_user");
+      if(saved){
+        const acc=JSON.parse(saved);
+        const fresh=await getAccount(acc.email);
+        if(fresh&&fresh.status==="active"){
+          setUser(fresh);
+          const savedTab=sessionStorage.getItem("financas_tab")||"dash";
+          setTab(savedTab);
+          if(fresh.mustChangePassword)setChangePassModal(true);
+        }else{
+          sessionStorage.removeItem("financas_user");
+          sessionStorage.removeItem("financas_tab");
+        }
+      }
+    }catch{}
     setReady(true);
   })()},[]);
 
   const handleLogin=(acc)=>{
-    const savedTab=sessionStorage.getItem("financas_tab")||"dash";
-    setUser(acc);setTab(savedTab);
+    setUser(acc);setTab("dash");
     sessionStorage.setItem("financas_user",JSON.stringify({email:acc.email}));
+    sessionStorage.setItem("financas_tab","dash");
     if(acc.mustChangePassword)setChangePassModal(true);
   };
 

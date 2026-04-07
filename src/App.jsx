@@ -28,23 +28,27 @@ export default function App(){
   const[refreshKey,setRefreshKey]=useState(0);
 
   useEffect(()=>{(async()=>{
-    await initAdmin();
-    try{
-      const saved=localStorage.getItem("financas_user");
-      if(saved){
-        const acc=JSON.parse(saved);
-        const fresh=await getAccount(acc.email);
-        if(fresh&&fresh.status==="active"){
-          setUser(fresh);
-          const savedTab=localStorage.getItem("financas_tab")||"dash";
-          setTab(savedTab);
-          if(fresh.mustChangePassword)setChangePassModal(true);
+    initAdmin().catch(()=>{});
+    const saved=localStorage.getItem("financas_user");
+    if(saved){
+      const cached=JSON.parse(saved);
+      const savedTab=localStorage.getItem("financas_tab")||"dash";
+      try{
+        const fresh=await getAccount(cached.email);
+        if(fresh&&fresh.status==="blocked"){
+          localStorage.removeItem("financas_user");localStorage.removeItem("financas_tab");
+        }else if(fresh&&fresh.status==="active"){
+          setUser(fresh);localStorage.setItem("financas_user",JSON.stringify(fresh));
+          setTab(savedTab);if(fresh.mustChangePassword)setChangePassModal(true);
         }else{
-          localStorage.removeItem("financas_user");
-          localStorage.removeItem("financas_tab");
+          // PocketBase indisponível ou regra bloqueando — usa cache
+          setUser(cached);setTab(savedTab);
         }
+      }catch{
+        // Erro de rede — mantém sessão com dados em cache
+        setUser(cached);setTab(savedTab);
       }
-    }catch{}
+    }
     setReady(true);
   })()},[]);
 
@@ -56,7 +60,7 @@ export default function App(){
 
   const handleLogin=(acc)=>{
     setUser(acc);setTab("dash");
-    localStorage.setItem("financas_user",JSON.stringify({email:acc.email}));
+    localStorage.setItem("financas_user",JSON.stringify(acc));
     localStorage.setItem("financas_tab","dash");
     if(acc.mustChangePassword)setChangePassModal(true);
   };

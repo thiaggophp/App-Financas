@@ -33,11 +33,11 @@ export default function Entries({user}){
     if(form.split&&members.length>=2){
       const half=Math.round(val/2*100)/100;
       for(let i=0;i<2&&i<members.length;i++){
-        const e={...base,id:edit&&i===0?edit.id:(Date.now()+"-"+i+"-"+Math.random().toString(36).slice(2,6)),value:half,memberId:members[i].id,split:true};
+        const e={...base,value:half,memberId:members[i].id,split:true};if(edit&&i===0)e.id=edit.id;
         await saveEntry(e);
       }
     }else{
-      base.id=edit?edit.id:Date.now()+"-"+Math.random().toString(36).slice(2,6);
+      if(edit)base.id=edit.id;
       await saveEntry(base);
     }
     setModal(false);await reload();

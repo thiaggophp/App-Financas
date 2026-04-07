@@ -15,7 +15,7 @@ export default function Goals({user}){
   const openNew=()=>{setEdit(null);setForm({name:"",target:"",saved:0});setModal(true)};
   const save=async()=>{
     if(!form.name||!form.target)return;
-    const g={id:edit?edit.id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,name:form.name,target:parseFloat(form.target)||0,saved:parseFloat(form.saved)||0};
+    const g={ownerEmail:user.email,name:form.name,target:parseFloat(form.target)||0,saved:parseFloat(form.saved)||0};if(edit)g.id=edit.id;
     await saveGoal(g);setModal(false);await reload();
   };
   const addAmount=async(g,amt)=>{g.saved=(g.saved||0)+amt;await saveGoal(g);await reload()};

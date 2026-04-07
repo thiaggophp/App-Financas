@@ -57,13 +57,7 @@ export async function getGroups(ownerEmail) {
 }
 export async function saveGroup(g) {
   try {
-    if (g.id && g.id.length === 15) {
-      return await pb.collection("groups").update(g.id, g);
-    }
-    const existing = await pb.collection("groups").getFirstListItem(`ownerEmail="${g.ownerEmail}" && name="${g.name}"`).catch(() => null);
-    if (existing && (!g.id || existing.id === g.id)) {
-      return await pb.collection("groups").update(existing.id, g);
-    }
+    if (g.id) return await pb.collection("groups").update(g.id, g);
     const created = await pb.collection("groups").create(g);
     g.id = created.id;
     return created;
@@ -84,9 +78,7 @@ export async function getMembersByGroup(groupId) {
 }
 export async function saveMember(m) {
   try {
-    if (m.id && m.id.length === 15) {
-      return await pb.collection("members").update(m.id, m);
-    }
+    if (m.id) return await pb.collection("members").update(m.id, m);
     const created = await pb.collection("members").create(m);
     m.id = created.id;
     return created;
@@ -103,9 +95,7 @@ export async function getEntries(ownerEmail) {
 }
 export async function saveEntry(e) {
   try {
-    if (e.id && e.id.length === 15) {
-      return await pb.collection("entries").update(e.id, e);
-    }
+    if (e.id) return await pb.collection("entries").update(e.id, e);
     const created = await pb.collection("entries").create(e);
     e.id = created.id;
     return created;
@@ -122,9 +112,7 @@ export async function getGoals(ownerEmail) {
 }
 export async function saveGoal(g) {
   try {
-    if (g.id && g.id.length === 15) {
-      return await pb.collection("goals").update(g.id, g);
-    }
+    if (g.id) return await pb.collection("goals").update(g.id, g);
     const created = await pb.collection("goals").create(g);
     g.id = created.id;
     return created;

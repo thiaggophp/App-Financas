@@ -23,7 +23,8 @@ export default function Groups({user}){
 
   const saveG=async()=>{
     if(!groupName.trim())return;
-    const g={id:editGroup?editGroup.id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,name:groupName.trim(),color:COLORS[groups.length%COLORS.length],createdAt:editGroup?editGroup.createdAt:new Date().toISOString()};
+    const g={ownerEmail:user.email,name:groupName.trim(),color:COLORS[groups.length%COLORS.length],createdAt:new Date().toISOString()};
+    if(editGroup){g.id=editGroup.id;g.createdAt=editGroup.createdAt;}
     await saveGroup(g);setGroupModal(false);setGroupName("");setEditGroup(null);await reload();
   };
 
@@ -48,13 +49,13 @@ export default function Groups({user}){
       try{
         await sendPasswordEmail(memberName.trim(),e,pass);
         await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
-        const m={id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
+        const m={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
         await saveMember(m);
         setMsg({t:"success",m:"Membro criado! Senha temporária enviada para "+e+". No primeiro acesso ele deverá definir uma nova senha."});
       }catch(err){setMsg({t:"error",m:"Erro: "+err.message});setLoading(false);return}
     }else{
       // Membro sem login (apenas label)
-      const m={id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:null,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
+      const m={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:null,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
       await saveMember(m);
     }
     setMemberModal(false);setMemberName("");setMemberEmail("");

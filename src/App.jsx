@@ -25,32 +25,39 @@ export default function App(){
   const[ready,setReady]=useState(false);
   const[changePassModal,setChangePassModal]=useState(false);
   const[newPass,setNewPass]=useState("");const[confirmPass,setConfirmPass]=useState("");const[passMsg,setPassMsg]=useState(null);
+  const[refreshKey,setRefreshKey]=useState(0);
 
   useEffect(()=>{(async()=>{
     await initAdmin();
     try{
-      const saved=sessionStorage.getItem("financas_user");
+      const saved=localStorage.getItem("financas_user");
       if(saved){
         const acc=JSON.parse(saved);
         const fresh=await getAccount(acc.email);
         if(fresh&&fresh.status==="active"){
           setUser(fresh);
-          const savedTab=sessionStorage.getItem("financas_tab")||"dash";
+          const savedTab=localStorage.getItem("financas_tab")||"dash";
           setTab(savedTab);
           if(fresh.mustChangePassword)setChangePassModal(true);
         }else{
-          sessionStorage.removeItem("financas_user");
-          sessionStorage.removeItem("financas_tab");
+          localStorage.removeItem("financas_user");
+          localStorage.removeItem("financas_tab");
         }
       }
     }catch{}
     setReady(true);
   })()},[]);
 
+  useEffect(()=>{
+    const onVisible=()=>{if(document.visibilityState==="visible")setRefreshKey(k=>k+1);};
+    document.addEventListener("visibilitychange",onVisible);
+    return()=>document.removeEventListener("visibilitychange",onVisible);
+  },[]);
+
   const handleLogin=(acc)=>{
     setUser(acc);setTab("dash");
-    sessionStorage.setItem("financas_user",JSON.stringify({email:acc.email}));
-    sessionStorage.setItem("financas_tab","dash");
+    localStorage.setItem("financas_user",JSON.stringify({email:acc.email}));
+    localStorage.setItem("financas_tab","dash");
     if(acc.mustChangePassword)setChangePassModal(true);
   };
 
@@ -61,7 +68,7 @@ export default function App(){
     setUser({...user});setChangePassModal(false);setNewPass("");setConfirmPass("");setPassMsg(null);
   };
 
-  const logout=()=>{setUser(null);setTab("dash");sessionStorage.removeItem("financas_user")};
+  const logout=()=>{setUser(null);setTab("dash");localStorage.removeItem("financas_user");localStorage.removeItem("financas_tab")};
 
   if(!ready)return(<div style={{minHeight:"100vh",background:"#0a0a1a",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#7c3aed",fontSize:18,animation:"pulse 1s infinite"}}>Carregando...</div></div>);
   if(!user)return <Login onLogin={handleLogin}/>;
@@ -90,10 +97,10 @@ export default function App(){
       <button onClick={logout} style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:10,padding:"8px 14px",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>🚪 Sair</button>
     </div>
 
-    <div style={{padding:16}}>{renderPage()}</div>
+    <div style={{padding:16}} key={refreshKey}>{renderPage()}</div>
 
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#0a0a1a",borderTop:"1px solid #1a1a30",display:"flex",justifyContent:"space-around",padding:"6px 0 env(safe-area-inset-bottom,8px)",zIndex:100}}>
-      {allTabs.map(t=><button key={t.id} onClick={()=>{setTab(t.id);sessionStorage.setItem("financas_tab",t.id)}}
+      {allTabs.map(t=><button key={t.id} onClick={()=>{setTab(t.id);localStorage.setItem("financas_tab",t.id)}}
         style={{background:"none",border:"none",color:tab===t.id?"#7c3aed":"#555",display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",fontSize:9,fontWeight:tab===t.id?700:400,gap:1,padding:"4px 6px"}}>
         <span style={{fontSize:18}}>{t.icon}</span>{t.label}
       </button>)}

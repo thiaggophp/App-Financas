@@ -19,6 +19,6 @@ jobs:
             git pull
             npm install
             npm run build
-            cp -r dist/* /var/www/financascasa/
+            cp -r dist/* /var/www/html/
             systemctl reload nginx
             echo "Deploy concluído!"

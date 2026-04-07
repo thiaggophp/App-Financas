@@ -25,7 +25,7 @@ financas-casa/
 ├── public/ (manifest.json, sw.js, ícones)
 ├── src/
 │   ├── main.jsx
-│   ├── App.jsx (roteamento, auth, sessão persistida no sessionStorage)
+│   ├── App.jsx (roteamento, auth, sessão persistida no localStorage — usa URL hash para aba atual)
 │   ├── db.js (PocketBase — accounts, groups, members, entries, goals, signup_requests)
 │   ├── emailService.js (EmailJS — credenciais via import.meta.env.VITE_*)
 │   ├── backup.js (exportar/importar JSON)
@@ -69,10 +69,35 @@ VITE_EMAILJS_PUBLIC_KEY=<sua_public_key>
 4. Cada usuário principal pode criar membros em seus grupos com email+senha — login próprio (parentEmail vincula ao dono).
 5. Sub-usuários (parentEmail definido) NÃO aparecem no painel Admin; gerenciados pelo dono na página Grupos.
 6. Dados compartilhados em tempo real entre dispositivos via PocketBase.
-7. Sessão persiste no sessionStorage — atualizar a página não faz logout.
+7. Sessão persiste no localStorage (objeto completo do usuário). Aba atual salva via URL hash (#dash, #config, etc.) — F5 preserva a aba.
 8. PWA instalável: Android (Chrome → Adicionar à tela inicial) | iPhone (Safari → Compartilhar → Adicionar à Tela Inicial).
 
 ## Comandos
 - `npm run dev` — rodar local (http://localhost:5173)
 - `npm run build` — gerar build de produção
 - `git add . && git commit -m "msg" && git push` — envia para GitHub
+
+## Problemas Conhecidos e Soluções
+
+### PocketBase — IDs customizados rejeitados
+Nunca gerar IDs manuais ao criar registros. Deixar o PocketBase gerar o ID automaticamente (não incluir campo `id` no create). Incluir `id` apenas no update.
+
+### PocketBase — schema das coleções
+Se os campos sumam, recriar via PATCH na API com token de superuser. Schemas das 6 coleções:
+- **accounts**: email, name, password, role, status, parentEmail, mustChangePassword (bool), protected (bool)
+- **signup_requests**: email, name, requestedAt, status
+- **groups**: ownerEmail, name, color, createdAt
+- **members**: ownerEmail, groupId, name, memberEmail, color, createdAt
+- **entries**: ownerEmail, date, type, category, description, amount (number), member1Email, member2Email, split (bool), createdAt
+- **goals**: ownerEmail, name, target (number), saved (number), createdAt
+
+### Vite — index.html corrompido
+O `index.html` raiz DEVE ter `<script type="module" src="/src/main.jsx">`. Se estiver referenciando o bundle compilado, restaurar com `git restore index.html`.
+
+### Vite 8 + Linux — incompatibilidade com pocketbase
+Usar Vite 5 (`"vite": "^5.4.19"`). O Vite 8 usa Rolldown que falha ao resolver pocketbase no Linux.
+
+### Deploy manual no VPS
+```bash
+cd /var/www/financascasa && git pull && npm install && npm run build && cp -r dist/* /var/www/html/ && systemctl reload nginx
+```

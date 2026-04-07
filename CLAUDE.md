@@ -9,7 +9,7 @@
 - URL: https://financascasa.online
 
 ## Infraestrutura
-- **VPS:** Locaweb — IP `177.153.33.67` — Debian 12
+- **VPS:** Locaweb — Debian 12 (IP guardado internamente)
 - **Domínio:** financascasa.online (DNS na Locaweb)
 - **App:** https://financascasa.online (nginx → /var/www/financascasa)
 - **API:** https://api.financascasa.online (nginx → PocketBase :8090)
@@ -17,16 +17,8 @@
 - **SSL:** Let's Encrypt (renova automaticamente via certbot)
 
 ## Acesso SSH ao VPS
-```bash
-ssh -i C:\Users\Thiago.SYGMA\.ssh\financas_vps root@177.153.33.67
-```
 A chave privada está em `C:\Users\Thiago.SYGMA\.ssh\financas_vps`.
-Em outro computador: copie a chave privada para `~/.ssh/financas_vps` e use o mesmo comando.
-
-## Deploy Manual (após git push)
-```bash
-ssh -i C:\Users\Thiago.SYGMA\.ssh\financas_vps root@177.153.33.67 "cd /var/www/financascasa && git pull && npm install && npm run build && cp -r dist/* /var/www/financascasa/ && systemctl reload nginx"
-```
+Em outro computador: copie a chave privada para `~/.ssh/financas_vps` e conecte via SSH ao IP do VPS (disponível no painel da Locaweb).
 
 ## Estrutura
 ```
@@ -67,7 +59,7 @@ VITE_EMAILJS_PUBLIC_KEY=<sua_public_key>
 ```
 
 ## Credenciais
-- **PocketBase superuser:** thiaggotx@gmail.com (senha guardada com o usuário)
+- **PocketBase superuser:** email e senha guardados com o proprietário (não commitados)
 - **EmailJS:** configuradas via variáveis de ambiente
 - **Admin app:** email e senha definidos via VITE_ADMIN_EMAIL e VITE_ADMIN_PASSWORD
 

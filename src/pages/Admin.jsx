@@ -1,5 +1,5 @@
 import{useState,useEffect}from"react";
-import{getAllAccounts,saveAccount,deleteAccount,getSignupRequests,deleteSignupRequest}from"../db";
+import{getAllAccounts,saveAccount,deleteAccount,getSignupRequests,deleteSignupRequest,pb}from"../db";
 import{sendPasswordEmail,generatePassword}from"../emailService";
 import{Btn,Input}from"../components/FormElements";
 import Modal from"../components/Modal";
@@ -13,7 +13,13 @@ export default function Admin({currentUser}){
 
   // Exibe apenas contas principais (sem parentEmail)
   const load=async()=>{const all=await getAllAccounts();setAccounts(all.filter(a=>!a.parentEmail));setRequests(await getSignupRequests())};
-  useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t)},[]);
+  useEffect(()=>{
+    load();
+    // Tempo real — atualiza quando chega nova solicitação
+    pb.collection("signup_requests").subscribe("*",()=>load());
+    pb.collection("accounts").subscribe("*",()=>load());
+    return()=>{pb.collection("signup_requests").unsubscribe("*");pb.collection("accounts").unsubscribe("*")};
+  },[]);
 
   const handleCreateUser=async()=>{
     if(!newName||!newEmail){setMsg({t:"error",m:"Preencha nome e e-mail"});return}

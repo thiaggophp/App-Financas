@@ -11,7 +11,7 @@ export default function Groups({user}){
   const[groupModal,setGroupModal]=useState(false);const[memberModal,setMemberModal]=useState(false);
   const[selGroup,setSelGroup]=useState(null);
   const[groupName,setGroupName]=useState("");
-  const[memberName,setMemberName]=useState("");const[memberEmail,setMemberEmail]=useState("");const[memberPass,setMemberPass]=useState("");
+  const[memberName,setMemberName]=useState("");const[memberEmail,setMemberEmail]=useState("");
   const[editGroup,setEditGroup]=useState(null);const[msg,setMsg]=useState(null);const[loading,setLoading]=useState(false);
 
   const reload=async()=>{
@@ -44,20 +44,20 @@ export default function Groups({user}){
       const{getAccount}=await import("../db");
       const existing=await getAccount(e);
       if(existing){setMsg({t:"error",m:"E-mail já cadastrado no sistema"});setLoading(false);return}
-      const pass=memberPass.trim()||generatePassword();
+      const pass=generatePassword();
       try{
         await sendPasswordEmail(memberName.trim(),e,pass);
         await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
         const m={id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
         await saveMember(m);
-        setMsg({t:"success",m:"Membro criado! Senha enviada para "+e});
+        setMsg({t:"success",m:"Membro criado! Senha temporária enviada para "+e+". No primeiro acesso ele deverá definir uma nova senha."});
       }catch(err){setMsg({t:"error",m:"Erro: "+err.message});setLoading(false);return}
     }else{
       // Membro sem login (apenas label)
       const m={id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:null,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
       await saveMember(m);
     }
-    setMemberModal(false);setMemberName("");setMemberEmail("");setMemberPass("");
+    setMemberModal(false);setMemberName("");setMemberEmail("");
     setLoading(false);await reload();
   };
 
@@ -148,9 +148,8 @@ export default function Groups({user}){
 
     <Modal open={memberModal} onClose={()=>setMemberModal(false)} title={"Novo Membro — "+(selGroup?.name||"")}>
       <Input label="Nome" value={memberName} onChange={e=>setMemberName(e.target.value)} placeholder="Ex: João, Maria..."/>
-      <p style={{color:"#666",fontSize:12,margin:"4px 0 8px"}}>Para criar login próprio, preencha o e-mail abaixo (opcional).</p>
       <Input label="E-mail (opcional)" type="email" value={memberEmail} onChange={e=>setMemberEmail(e.target.value)} placeholder="email@exemplo.com"/>
-      {memberEmail.trim()&&<Input label="Senha (opcional — gera automático se vazio)" type="password" value={memberPass} onChange={e=>setMemberPass(e.target.value)} placeholder="Mínimo 6 caracteres"/>}
+      {memberEmail.trim()&&<p style={{color:"#888",fontSize:12,margin:"4px 0 8px"}}>Uma senha temporária será enviada para este e-mail. No primeiro acesso, o usuário deverá definir uma nova senha.</p>}
       {msg&&<div style={{color:msg.t==="error"?"#ef4444":"#22c55e",fontSize:12,marginBottom:8}}>{msg.m}</div>}
       <Btn onClick={saveM} disabled={loading}>{loading?"Criando...":"Adicionar Membro"}</Btn>
     </Modal>

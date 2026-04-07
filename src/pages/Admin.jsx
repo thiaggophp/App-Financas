@@ -13,7 +13,7 @@ export default function Admin({currentUser}){
 
   // Exibe apenas contas principais (sem parentEmail)
   const load=async()=>{const all=await getAllAccounts();setAccounts(all.filter(a=>!a.parentEmail));setRequests(await getSignupRequests())};
-  useEffect(()=>{load()},[]);
+  useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t)},[]);
 
   const handleCreateUser=async()=>{
     if(!newName||!newEmail){setMsg({t:"error",m:"Preencha nome e e-mail"});return}

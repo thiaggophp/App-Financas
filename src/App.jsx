@@ -33,7 +33,8 @@ export default function App(){
   })()},[]);
 
   const handleLogin=(acc)=>{
-    setUser(acc);setTab("dash");
+    const savedTab=sessionStorage.getItem("financas_tab")||"dash";
+    setUser(acc);setTab(savedTab);
     sessionStorage.setItem("financas_user",JSON.stringify({email:acc.email}));
     if(acc.mustChangePassword)setChangePassModal(true);
   };
@@ -77,7 +78,7 @@ export default function App(){
     <div style={{padding:16}}>{renderPage()}</div>
 
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#0a0a1a",borderTop:"1px solid #1a1a30",display:"flex",justifyContent:"space-around",padding:"6px 0 env(safe-area-inset-bottom,8px)",zIndex:100}}>
-      {allTabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)}
+      {allTabs.map(t=><button key={t.id} onClick={()=>{setTab(t.id);sessionStorage.setItem("financas_tab",t.id)}}
         style={{background:"none",border:"none",color:tab===t.id?"#7c3aed":"#555",display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",fontSize:9,fontWeight:tab===t.id?700:400,gap:1,padding:"4px 6px"}}>
         <span style={{fontSize:18}}>{t.icon}</span>{t.label}
       </button>)}

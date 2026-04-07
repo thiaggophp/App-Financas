@@ -1,18 +1,24 @@
 import{useState,useEffect}from"react";
-import{getGroups,saveGroup,deleteGroup,getMembers,getMembersByGroup,saveMember,deleteMember}from"../db";
+import{getGroups,saveGroup,deleteGroup,getMembers,getMembersByGroup,saveMember,deleteMember,saveAccount,deleteAccount,getSubUsers}from"../db";
+import{sendPasswordEmail,generatePassword}from"../emailService";
 import{Btn,Input}from"../components/FormElements";
 import Modal from"../components/Modal";import Card from"../components/Card";import Avatar from"../components/Avatar";
 
 const COLORS=["#7c3aed","#3b82f6","#22c55e","#f59e0b","#ef4444","#ec4899","#06b6d4","#84cc16"];
 
 export default function Groups({user}){
-  const[groups,setGroups]=useState([]);const[members,setMembers]=useState([]);
+  const[groups,setGroups]=useState([]);const[members,setMembers]=useState([]);const[subUsers,setSubUsers]=useState([]);
   const[groupModal,setGroupModal]=useState(false);const[memberModal,setMemberModal]=useState(false);
   const[selGroup,setSelGroup]=useState(null);
-  const[groupName,setGroupName]=useState("");const[memberName,setMemberName]=useState("");
-  const[editGroup,setEditGroup]=useState(null);
+  const[groupName,setGroupName]=useState("");
+  const[memberName,setMemberName]=useState("");const[memberEmail,setMemberEmail]=useState("");const[memberPass,setMemberPass]=useState("");
+  const[editGroup,setEditGroup]=useState(null);const[msg,setMsg]=useState(null);const[loading,setLoading]=useState(false);
 
-  const reload=async()=>{setGroups(await getGroups(user.email));setMembers(await getMembers(user.email))};
+  const reload=async()=>{
+    setGroups(await getGroups(user.email));
+    setMembers(await getMembers(user.email));
+    setSubUsers(await getSubUsers(user.email));
+  };
   useEffect(()=>{reload()},[user.email]);
 
   const saveG=async()=>{
@@ -29,12 +35,54 @@ export default function Groups({user}){
   };
 
   const saveM=async()=>{
-    if(!memberName.trim()||!selGroup)return;
-    const m={id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
-    await saveMember(m);setMemberModal(false);setMemberName("");await reload();
+    if(!memberName.trim()||!selGroup){setMsg({t:"error",m:"Preencha o nome"});return}
+    setLoading(true);setMsg(null);
+    // Se tiver email, cria conta vinculada
+    if(memberEmail.trim()){
+      const e=memberEmail.trim().toLowerCase();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){setMsg({t:"error",m:"E-mail inválido"});setLoading(false);return}
+      const{getAccount}=await import("../db");
+      const existing=await getAccount(e);
+      if(existing){setMsg({t:"error",m:"E-mail já cadastrado no sistema"});setLoading(false);return}
+      const pass=memberPass.trim()||generatePassword();
+      try{
+        await sendPasswordEmail(memberName.trim(),e,pass);
+        await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
+        const m={id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
+        await saveMember(m);
+        setMsg({t:"success",m:"Membro criado! Senha enviada para "+e});
+      }catch(err){setMsg({t:"error",m:"Erro: "+err.message});setLoading(false);return}
+    }else{
+      // Membro sem login (apenas label)
+      const m={id:Date.now()+"-"+Math.random().toString(36).slice(2,6),ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:null,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
+      await saveMember(m);
+    }
+    setMemberModal(false);setMemberName("");setMemberEmail("");setMemberPass("");
+    setLoading(false);await reload();
   };
 
-  const removeM=async(m)=>{await deleteMember(m.id);await reload()};
+  const removeM=async(m)=>{
+    if(!confirm("Remover "+m.name+" do grupo?")){return}
+    await deleteMember(m.id);
+    // Remove conta vinculada se existir
+    if(m.memberEmail){const{getAccount}=await import("../db");const acc=await getAccount(m.memberEmail);if(acc&&acc.parentEmail===user.email)await deleteAccount(m.memberEmail)}
+    await reload();
+  };
+
+  const toggleBlockMember=async(m)=>{
+    if(!m.memberEmail)return;
+    const{getAccount}=await import("../db");
+    const acc=await getAccount(m.memberEmail);
+    if(!acc)return;
+    acc.status=acc.status==="active"?"blocked":"active";
+    await saveAccount(acc);await reload();
+  };
+
+  const getMemberStatus=(m)=>{
+    if(!m.memberEmail)return null;
+    const acc=subUsers.find(s=>s.email===m.memberEmail);
+    return acc?.status||null;
+  };
 
   const groupMembers=selGroup?members.filter(m=>m.groupId===selGroup.id):[];
 
@@ -43,6 +91,8 @@ export default function Groups({user}){
       <h2 style={{color:"#fff",margin:0,fontSize:20}}>Grupos & Membros</h2>
       <Btn onClick={()=>{setEditGroup(null);setGroupName("");setGroupModal(true)}} style={{width:"auto",padding:"8px 16px",fontSize:13}}>+ Grupo</Btn>
     </div>
+
+    {msg&&<div style={{padding:"10px 14px",borderRadius:12,marginBottom:12,fontSize:13,background:msg.t==="success"?"#22c55e15":"#ef444415",color:msg.t==="success"?"#22c55e":"#ef4444"}}>{msg.m}</div>}
 
     {groups.length===0&&<p style={{color:"#666",textAlign:"center",marginTop:30}}>Crie seu primeiro grupo para começar</p>}
 
@@ -61,21 +111,33 @@ export default function Groups({user}){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <h3 style={{color:selGroup.color,margin:0,fontSize:16}}>{selGroup.name}</h3>
         <div style={{display:"flex",gap:6}}>
-          <Btn onClick={()=>setMemberModal(true)} style={{width:"auto",padding:"6px 12px",fontSize:12}}>+ Membro</Btn>
+          <Btn onClick={()=>{setMemberModal(true);setMsg(null)}} style={{width:"auto",padding:"6px 12px",fontSize:12}}>+ Membro</Btn>
           <button onClick={()=>{setEditGroup(selGroup);setGroupName(selGroup.name);setGroupModal(true)}} style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:8,padding:"6px 8px",fontSize:12,color:"#7c3aed",cursor:"pointer"}}>✏️</button>
           <button onClick={()=>removeG(selGroup)} style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:8,padding:"6px 8px",fontSize:12,color:"#ef4444",cursor:"pointer"}}>🗑</button>
         </div>
       </div>
 
-      {groupMembers.map(m=><Card key={m.id}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{display:"flex",gap:10,alignItems:"center"}}>
-            <Avatar name={m.name} color={m.color} size={32}/>
-            <span style={{color:"#fff",fontWeight:600,fontSize:14}}>{m.name}</span>
+      {groupMembers.map(m=>{
+        const status=getMemberStatus(m);
+        return(<Card key={m.id}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <Avatar name={m.name} color={m.color} size={32}/>
+              <div>
+                <span style={{color:"#fff",fontWeight:600,fontSize:14}}>{m.name}</span>
+                {m.memberEmail&&<div style={{color:"#666",fontSize:11}}>{m.memberEmail}</div>}
+                {status&&<div style={{fontSize:10,color:status==="active"?"#22c55e":"#ef4444"}}>{status==="active"?"● Ativo":"● Bloqueado"}</div>}
+                {!m.memberEmail&&<div style={{color:"#555",fontSize:10}}>Sem login</div>}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              {m.memberEmail&&<button onClick={()=>toggleBlockMember(m)} title={status==="active"?"Bloquear":"Desbloquear"}
+                style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:8,padding:"6px 8px",fontSize:12,color:status==="active"?"#f59e0b":"#22c55e",cursor:"pointer"}}>{status==="active"?"🚫":"✅"}</button>}
+              <button onClick={()=>removeM(m)} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:14}}>🗑</button>
+            </div>
           </div>
-          <button onClick={()=>removeM(m)} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:14}}>🗑</button>
-        </div>
-      </Card>)}
+        </Card>);
+      })}
       {groupMembers.length===0&&<p style={{color:"#666",textAlign:"center",marginTop:16,fontSize:13}}>Nenhum membro neste grupo</p>}
     </div>}
 
@@ -85,8 +147,12 @@ export default function Groups({user}){
     </Modal>
 
     <Modal open={memberModal} onClose={()=>setMemberModal(false)} title={"Novo Membro — "+(selGroup?.name||"")}>
-      <Input label="Nome do membro" value={memberName} onChange={e=>setMemberName(e.target.value)} placeholder="Ex: João, Maria..."/>
-      <Btn onClick={saveM}>Adicionar Membro</Btn>
+      <Input label="Nome" value={memberName} onChange={e=>setMemberName(e.target.value)} placeholder="Ex: João, Maria..."/>
+      <p style={{color:"#666",fontSize:12,margin:"4px 0 8px"}}>Para criar login próprio, preencha o e-mail abaixo (opcional).</p>
+      <Input label="E-mail (opcional)" type="email" value={memberEmail} onChange={e=>setMemberEmail(e.target.value)} placeholder="email@exemplo.com"/>
+      {memberEmail.trim()&&<Input label="Senha (opcional — gera automático se vazio)" type="password" value={memberPass} onChange={e=>setMemberPass(e.target.value)} placeholder="Mínimo 6 caracteres"/>}
+      {msg&&<div style={{color:msg.t==="error"?"#ef4444":"#22c55e",fontSize:12,marginBottom:8}}>{msg.m}</div>}
+      <Btn onClick={saveM} disabled={loading}>{loading?"Criando...":"Adicionar Membro"}</Btn>
     </Modal>
   </div>);
 }

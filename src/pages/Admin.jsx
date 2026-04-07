@@ -11,7 +11,8 @@ export default function Admin({currentUser}){
   const[newName,setNewName]=useState("");const[newEmail,setNewEmail]=useState("");
   const[newPass,setNewPass]=useState("");const[msg,setMsg]=useState(null);const[loading,setLoading]=useState(false);
 
-  const load=async()=>{setAccounts(await getAllAccounts());setRequests(await getSignupRequests())};
+  // Exibe apenas contas principais (sem parentEmail)
+  const load=async()=>{const all=await getAllAccounts();setAccounts(all.filter(a=>!a.parentEmail));setRequests(await getSignupRequests())};
   useEffect(()=>{load()},[]);
 
   const handleCreateUser=async()=>{

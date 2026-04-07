@@ -26,10 +26,15 @@ export default function App(){
   const[changePassModal,setChangePassModal]=useState(false);
   const[newPass,setNewPass]=useState("");const[confirmPass,setConfirmPass]=useState("");const[passMsg,setPassMsg]=useState(null);
 
-  useEffect(()=>{(async()=>{await initAdmin();setReady(true)})()},[]);
+  useEffect(()=>{(async()=>{
+    await initAdmin();
+    try{const saved=sessionStorage.getItem("financas_user");if(saved){const acc=JSON.parse(saved);const fresh=await getAccount(acc.email);if(fresh&&fresh.status==="active"){setUser(fresh);if(fresh.mustChangePassword)setChangePassModal(true);}}}catch{}
+    setReady(true);
+  })()},[]);
 
   const handleLogin=(acc)=>{
     setUser(acc);setTab("dash");
+    sessionStorage.setItem("financas_user",JSON.stringify({email:acc.email}));
     if(acc.mustChangePassword)setChangePassModal(true);
   };
 
@@ -40,7 +45,7 @@ export default function App(){
     setUser({...user});setChangePassModal(false);setNewPass("");setConfirmPass("");setPassMsg(null);
   };
 
-  const logout=()=>{setUser(null);setTab("dash")};
+  const logout=()=>{setUser(null);setTab("dash");sessionStorage.removeItem("financas_user")};
 
   if(!ready)return(<div style={{minHeight:"100vh",background:"#0a0a1a",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#7c3aed",fontSize:18,animation:"pulse 1s infinite"}}>Carregando...</div></div>);
   if(!user)return <Login onLogin={handleLogin}/>;

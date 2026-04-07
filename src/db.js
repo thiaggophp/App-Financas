@@ -64,8 +64,13 @@ export async function importAllData(data){
 
 // ─── INIT ADMIN ───
 export async function initAdmin(){
-  const admin=await getAccount("thiaggotx@gmail.com");
+  const adminEmail=import.meta.env.VITE_ADMIN_EMAIL||"thiaggotx@gmail.com";
+  const adminPass=import.meta.env.VITE_ADMIN_PASSWORD||"";
+  const admin=await getAccount(adminEmail);
   if(!admin){
-    await saveAccount({email:"thiaggotx@gmail.com",name:"Thiago",password:"Precioso21",role:"admin",status:"active",createdAt:new Date().toISOString(),mustChangePassword:false,protected:true});
+    await saveAccount({email:adminEmail,name:"Admin",password:adminPass,role:"admin",status:"active",createdAt:new Date().toISOString(),mustChangePassword:false,protected:true});
   }
 }
+
+// ─── SUB-USERS (membros com login) ───
+export async function getSubUsers(parentEmail){const db=await getDB();const all=await db.getAll("accounts");return all.filter(a=>a.parentEmail===parentEmail)}

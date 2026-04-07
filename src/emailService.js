@@ -1,6 +1,6 @@
-const SERVICE_ID="service_d0uex69";
-const TEMPLATE_ID="template_nzuzzgq";
-const PUBLIC_KEY="5R9ZxFkk-UzbIXlGh";
+const SERVICE_ID=import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const TEMPLATE_ID=import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const PUBLIC_KEY=import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 export function generatePassword(len=8){
   const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";

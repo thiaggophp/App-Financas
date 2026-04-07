@@ -4,7 +4,15 @@ export async function exportBackup(ownerEmail){
     const data=await exportAllData(ownerEmail);const json=JSON.stringify(data,null,2);
     const blob=new Blob([json],{type:"application/json"});
     const fn="financas-backup-"+new Date().toISOString().slice(0,10)+".json";
-    if(navigator.share&&navigator.canShare){const file=new File([blob],fn,{type:"application/json"});const sd={files:[file],title:"Backup Finanças"};if(navigator.canShare(sd)){await navigator.share(sd);return{success:true,method:"share"}}}
+    // Tenta Web Share API (mobile) mas cai no download se falhar
+    if(navigator.share&&navigator.canShare){
+      try{
+        const file=new File([blob],fn,{type:"application/json"});
+        const sd={files:[file],title:"Backup Finanças"};
+        if(navigator.canShare(sd)){await navigator.share(sd);return{success:true,method:"share"}}
+      }catch(shareErr){if(shareErr.name==="AbortError")return{success:false,cancelled:true}}
+      // Se share falhou por Permission Denied ou outro motivo, usa download
+    }
     const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
     return{success:true,method:"download"};
   }catch(err){if(err.name==="AbortError")return{success:false,cancelled:true};return{success:false,error:err.message}}

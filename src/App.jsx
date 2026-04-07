@@ -20,8 +20,12 @@ const tabs=[
   {id:"config",label:"Config",icon:"⚙️"},
 ];
 
+const VALID_TABS=["dash","entries","groups","goals","reports","config","admin"];
+const getHashTab=()=>{const h=window.location.hash.slice(1);return VALID_TABS.includes(h)?h:"dash"};
+
 export default function App(){
-  const[user,setUser]=useState(null);const[tab,setTab]=useState("dash");
+  const[user,setUser]=useState(null);
+  const[tab,setTab]=useState(getHashTab);
   const[ready,setReady]=useState(false);
   const[changePassModal,setChangePassModal]=useState(false);
   const[newPass,setNewPass]=useState("");const[confirmPass,setConfirmPass]=useState("");const[passMsg,setPassMsg]=useState(null);
@@ -32,25 +36,28 @@ export default function App(){
     const saved=localStorage.getItem("financas_user");
     if(saved){
       const cached=JSON.parse(saved);
-      const savedTab=localStorage.getItem("financas_tab")||"dash";
       try{
         const fresh=await getAccount(cached.email);
         if(fresh&&fresh.status==="blocked"){
-          localStorage.removeItem("financas_user");localStorage.removeItem("financas_tab");
+          localStorage.removeItem("financas_user");
         }else if(fresh&&fresh.status==="active"){
           setUser(fresh);localStorage.setItem("financas_user",JSON.stringify(fresh));
-          setTab(savedTab);if(fresh.mustChangePassword)setChangePassModal(true);
+          if(fresh.mustChangePassword)setChangePassModal(true);
         }else{
-          // PocketBase indisponível ou regra bloqueando — usa cache
-          setUser(cached);setTab(savedTab);
+          setUser(cached);
         }
       }catch{
-        // Erro de rede — mantém sessão com dados em cache
-        setUser(cached);setTab(savedTab);
+        setUser(cached);
       }
     }
     setReady(true);
   })()},[]);
+
+  useEffect(()=>{
+    const onHash=()=>setTab(getHashTab());
+    window.addEventListener("hashchange",onHash);
+    return()=>window.removeEventListener("hashchange",onHash);
+  },[]);
 
   useEffect(()=>{
     const onVisible=()=>{if(document.visibilityState==="visible")setRefreshKey(k=>k+1);};
@@ -58,10 +65,12 @@ export default function App(){
     return()=>document.removeEventListener("visibilitychange",onVisible);
   },[]);
 
+  const changeTab=(id)=>{setTab(id);window.location.hash=id;};
+
   const handleLogin=(acc)=>{
-    setUser(acc);setTab("dash");
+    setUser(acc);
     localStorage.setItem("financas_user",JSON.stringify(acc));
-    localStorage.setItem("financas_tab","dash");
+    changeTab("dash");
     if(acc.mustChangePassword)setChangePassModal(true);
   };
 
@@ -72,7 +81,7 @@ export default function App(){
     setUser({...user});setChangePassModal(false);setNewPass("");setConfirmPass("");setPassMsg(null);
   };
 
-  const logout=()=>{setUser(null);setTab("dash");localStorage.removeItem("financas_user");localStorage.removeItem("financas_tab")};
+  const logout=()=>{setUser(null);localStorage.removeItem("financas_user");window.location.hash="";};
 
   if(!ready)return(<div style={{minHeight:"100vh",background:"#0a0a1a",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#7c3aed",fontSize:18,animation:"pulse 1s infinite"}}>Carregando...</div></div>);
   if(!user)return <Login onLogin={handleLogin}/>;
@@ -104,7 +113,7 @@ export default function App(){
     <div style={{padding:16}} key={refreshKey}>{renderPage()}</div>
 
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#0a0a1a",borderTop:"1px solid #1a1a30",display:"flex",justifyContent:"space-around",padding:"6px 0 env(safe-area-inset-bottom,8px)",zIndex:100}}>
-      {allTabs.map(t=><button key={t.id} onClick={()=>{setTab(t.id);localStorage.setItem("financas_tab",t.id)}}
+      {allTabs.map(t=><button key={t.id} onClick={()=>changeTab(t.id)}
         style={{background:"none",border:"none",color:tab===t.id?"#7c3aed":"#555",display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",fontSize:9,fontWeight:tab===t.id?700:400,gap:1,padding:"4px 6px"}}>
         <span style={{fontSize:18}}>{t.icon}</span>{t.label}
       </button>)}

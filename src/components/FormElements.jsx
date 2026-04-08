@@ -1,15 +1,24 @@
-export function Input({label,style,...props}){
-  return(<div style={{marginBottom:14}}>
-    {label&&<label style={{display:"block",color:"#8888aa",fontSize:12,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>{label}</label>}
-    <input {...props} style={{width:"100%",padding:"12px 14px",background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:12,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box",transition:"border .2s",...(style||{})}}/>
+export function Input({label,style,onFocus,onBlur,...props}){
+  return(<div style={{marginBottom:16}}>
+    {label&&<label style={{display:"block",color:"#64748b",fontSize:11,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:.8}}>{label}</label>}
+    <input {...props}
+      onFocus={e=>{e.target.style.borderColor="rgba(124,58,237,.7)";e.target.style.boxShadow="0 0 0 3px rgba(124,58,237,.15)";if(onFocus)onFocus(e)}}
+      onBlur={e=>{e.target.style.borderColor="rgba(255,255,255,0.08)";e.target.style.boxShadow="none";if(onBlur)onBlur(e)}}
+      style={{width:"100%",padding:"13px 16px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,color:"#f1f5f9",fontSize:15,outline:"none",boxSizing:"border-box",transition:"border .2s,box-shadow .2s",WebkitAppearance:"none",colorScheme:"dark",...(style||{})}}/>
   </div>)
 }
 export function Select({label,options,...props}){
-  return(<div style={{marginBottom:14}}>
-    {label&&<label style={{display:"block",color:"#8888aa",fontSize:12,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>{label}</label>}
-    <select {...props} style={{width:"100%",padding:"12px 14px",background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:12,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box"}}>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>
+  return(<div style={{marginBottom:16}}>
+    {label&&<label style={{display:"block",color:"#64748b",fontSize:11,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:.8}}>{label}</label>}
+    <select {...props} style={{width:"100%",padding:"13px 16px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,color:"#f1f5f9",fontSize:15,outline:"none",boxSizing:"border-box",WebkitAppearance:"none",appearance:"none",colorScheme:"dark"}}>
+      {options.map(o=><option key={o.value} value={o.value} style={{background:"#0e0e24",color:"#f1f5f9"}}>{o.label}</option>)}
+    </select>
   </div>)
 }
-export function Btn({children,color="linear-gradient(135deg,#7c3aed,#6d28d9)",style,disabled,...props}){
-  return(<button disabled={disabled} {...props} style={{background:color,color:"#fff",border:"none",borderRadius:14,padding:"13px 20px",fontSize:15,fontWeight:700,cursor:disabled?"not-allowed":"pointer",width:"100%",opacity:disabled?.5:1,transition:"transform .1s",...(style||{})}}>{children}</button>)
+export function Btn({children,color,style,disabled,...props}){
+  const bg=color||"linear-gradient(135deg,#7c3aed,#6d28d9)";
+  return(<button disabled={disabled} {...props}
+    style={{background:bg,color:color&&!color.includes("gradient")&&!color.startsWith("rgba(124")?"inherit":"#fff",border:"none",borderRadius:14,padding:"14px 20px",fontSize:15,fontWeight:700,cursor:disabled?"not-allowed":"pointer",width:"100%",opacity:disabled?.5:1,transition:"opacity .15s,transform .1s",letterSpacing:.2,...(style||{})}}>
+    {children}
+  </button>)
 }

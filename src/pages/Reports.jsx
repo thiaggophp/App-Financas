@@ -10,7 +10,7 @@ export default function Reports({user}){
 
   const data=useMemo(()=>MONTHS.map((_,i)=>{
     const mk=year+"-"+String(i+1).padStart(2,"0");
-    const me=entries.filter(e=>e.month===mk);
+    const me=entries.filter(e=>e.date&&e.date.startsWith(mk));
     return{m:MONTHS[i],r:me.filter(e=>e.type==="receita").reduce((s,e)=>s+e.value,0),d:me.filter(e=>e.type==="despesa").reduce((s,e)=>s+e.value,0)};
   }),[entries,year]);
 

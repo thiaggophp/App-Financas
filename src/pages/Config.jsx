@@ -2,7 +2,7 @@ import{useState}from"react";
 import{saveAccount}from"../db";
 import{exportBackup,importBackupFile,confirmImport}from"../backup";
 import{Btn,Input}from"../components/FormElements";
-import Modal from"../components/Modal";import Card from"../components/Card";
+import Modal from"../components/Modal";
 
 export default function Config({user,onUpdate}){
   const[msg,setMsg]=useState(null);const[loading,setLoading]=useState(false);
@@ -11,7 +11,7 @@ export default function Config({user,onUpdate}){
 
   const handleExport=async()=>{
     setLoading(true);const r=await exportBackup(user.email);
-    if(r.success)setMsg({t:"success",m:"Backup exportado!"});else if(!r.cancelled)setMsg({t:"error",m:r.error||"Erro"});
+    if(r.success)setMsg({t:"success",m:"Backup exportado com sucesso!"});else if(!r.cancelled)setMsg({t:"error",m:r.error||"Erro ao exportar"});
     setLoading(false);
   };
 
@@ -23,7 +23,7 @@ export default function Config({user,onUpdate}){
 
   const handleConfirmImport=async()=>{
     const r=await confirmImport(importData);
-    if(r.success)setMsg({t:"success",m:"Dados restaurados!"});else setMsg({t:"error",m:r.error});
+    if(r.success)setMsg({t:"success",m:"Dados restaurados com sucesso!"});else setMsg({t:"error",m:r.error});
     setImporting(false);
   };
 
@@ -31,31 +31,45 @@ export default function Config({user,onUpdate}){
     if(!newPass||newPass.length<6){setMsg({t:"error",m:"Mínimo 6 caracteres"});return}
     if(newPass!==confirmPass){setMsg({t:"error",m:"Senhas não conferem"});return}
     user.password=newPass;user.mustChangePassword=false;await saveAccount(user);
-    setMsg({t:"success",m:"Senha alterada!"});setPassModal(false);setNewPass("");setConfirmPass("");
+    setMsg({t:"success",m:"Senha alterada com sucesso!"});setPassModal(false);setNewPass("");setConfirmPass("");
     if(onUpdate)onUpdate(user);
   };
 
   return(<div style={{padding:"0 4px"}}>
-    <h2 style={{color:"#fff",margin:"0 0 16px",fontSize:20}}>Configurações</h2>
+    <h2 style={{color:"#f1f5f9",margin:"0 0 18px",fontSize:20,fontWeight:700}}>Configurações</h2>
 
-    <Card style={{marginBottom:12}}>
-      <div style={{color:"#888",fontSize:12,fontWeight:600,marginBottom:8}}>CONTA</div>
-      <div style={{color:"#fff",fontWeight:600,fontSize:15}}>{user.name}</div>
-      <div style={{color:"#666",fontSize:13}}>{user.email}</div>
-      <div style={{color:"#7c3aed",fontSize:12,marginTop:4}}>{user.role==="admin"?"Administrador":"Usuário"}</div>
-      <Btn onClick={()=>{setPassModal(true);setMsg(null)}} color="#1a1a30" style={{marginTop:10,border:"1px solid #2a2a4a",fontSize:13}}>🔑 Alterar Senha</Btn>
-    </Card>
+    {msg&&<div style={{padding:"11px 14px",borderRadius:12,marginBottom:14,fontSize:13,background:msg.t==="success"?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",color:msg.t==="success"?"#22c55e":"#ef4444",border:"1px solid "+(msg.t==="success"?"rgba(34,197,94,.2)":"rgba(239,68,68,.2)")}}>{msg.m}</div>}
 
-    <Card style={{marginBottom:12}}>
-      <div style={{color:"#888",fontSize:12,fontWeight:600,marginBottom:8}}>BACKUP</div>
-      <p style={{color:"#666",fontSize:12,marginBottom:10}}>Exporte para salvar seus dados. Restaure em outro dispositivo.</p>
-      <div style={{display:"flex",gap:8}}>
-        <Btn onClick={handleExport} color="#22c55e" style={{fontSize:13,padding:10}} disabled={loading}>{loading?"Exportando...":"📤 Exportar"}</Btn>
-        <Btn onClick={handleImport} color="#3b82f6" style={{fontSize:13,padding:10}}>📥 Restaurar</Btn>
+    <div style={{background:"#111127",borderRadius:18,padding:"18px",marginBottom:12,border:"1px solid rgba(255,255,255,0.06)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
+        <div style={{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>
+          {user.name.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <div style={{color:"#f1f5f9",fontWeight:700,fontSize:16}}>{user.name}</div>
+          <div style={{color:"#64748b",fontSize:12,marginTop:2}}>{user.email}</div>
+          <div style={{color:"#7c3aed",fontSize:11,marginTop:2,fontWeight:600}}>{user.role==="admin"?"Administrador":"Usuário"}</div>
+        </div>
       </div>
-    </Card>
+      <button onClick={()=>{setPassModal(true);setMsg(null)}} style={{width:"100%",padding:"11px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,color:"#94a3b8",fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"left"}}>
+        🔑 Alterar senha
+      </button>
+    </div>
 
-    {msg&&<div style={{padding:"10px 14px",borderRadius:12,marginBottom:12,fontSize:13,background:msg.t==="success"?"#22c55e15":"#ef444415",color:msg.t==="success"?"#22c55e":"#ef4444"}}>{msg.m}</div>}
+    <div style={{background:"#111127",borderRadius:18,padding:"18px",marginBottom:12,border:"1px solid rgba(255,255,255,0.06)"}}>
+      <div style={{color:"#64748b",fontSize:11,fontWeight:700,letterSpacing:.8,marginBottom:12}}>BACKUP</div>
+      <p style={{color:"#64748b",fontSize:12,marginBottom:14,lineHeight:1.5}}>Exporte seus dados para guardar uma cópia. Restaure em outro dispositivo quando necessário.</p>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={handleExport} disabled={loading}
+          style={{flex:1,padding:"11px",background:"rgba(34,197,94,.1)",border:"1px solid rgba(34,197,94,.2)",borderRadius:12,color:"#22c55e",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?.6:1}}>
+          {loading?"...":"📤 Exportar"}
+        </button>
+        <button onClick={handleImport}
+          style={{flex:1,padding:"11px",background:"rgba(59,130,246,.1)",border:"1px solid rgba(59,130,246,.2)",borderRadius:12,color:"#60a5fa",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+          📥 Restaurar
+        </button>
+      </div>
+    </div>
 
     <Modal open={passModal} onClose={()=>setPassModal(false)} title="Alterar Senha">
       <Input label="Nova senha" type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="Mínimo 6 caracteres"/>
@@ -65,19 +79,21 @@ export default function Config({user,onUpdate}){
 
     <Modal open={importing} onClose={()=>setImporting(false)} title="Restaurar Backup">
       {importInfo&&<div>
-        <p style={{color:"#f59e0b",fontSize:13,marginBottom:12}}>⚠️ Os dados atuais serão substituídos. Essa ação não pode ser desfeita.</p>
-        <Card style={{marginBottom:14}}>
-          <div style={{color:"#888",fontSize:13,lineHeight:1.8}}>
-            📅 Data: <strong style={{color:"#ccc"}}>{importInfo.date}</strong><br/>
-            💳 Lançamentos: <strong style={{color:"#ccc"}}>{importInfo.entries}</strong><br/>
-            🎯 Metas: <strong style={{color:"#ccc"}}>{importInfo.goals}</strong><br/>
-            👥 Grupos: <strong style={{color:"#ccc"}}>{importInfo.groups}</strong><br/>
-            🧑 Membros: <strong style={{color:"#ccc"}}>{importInfo.members}</strong>
+        <div style={{background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
+          <div style={{color:"#f59e0b",fontSize:13,fontWeight:600}}>⚠️ Os dados atuais serão substituídos. Essa ação não pode ser desfeita.</div>
+        </div>
+        <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"14px",marginBottom:16}}>
+          <div style={{color:"#94a3b8",fontSize:13,lineHeight:2}}>
+            📅 Data: <strong style={{color:"#f1f5f9"}}>{importInfo.date}</strong><br/>
+            💳 Lançamentos: <strong style={{color:"#f1f5f9"}}>{importInfo.entries}</strong><br/>
+            🎯 Metas: <strong style={{color:"#f1f5f9"}}>{importInfo.goals}</strong><br/>
+            👥 Grupos: <strong style={{color:"#f1f5f9"}}>{importInfo.groups}</strong><br/>
+            🧑 Membros: <strong style={{color:"#f1f5f9"}}>{importInfo.members}</strong>
           </div>
-        </Card>
+        </div>
         <div style={{display:"flex",gap:8}}>
-          <Btn onClick={()=>setImporting(false)} color="#444" style={{flex:1}}>Cancelar</Btn>
-          <Btn onClick={handleConfirmImport} color="#f59e0b" style={{flex:1}}>Restaurar</Btn>
+          <Btn onClick={()=>setImporting(false)} color="rgba(255,255,255,0.06)" style={{flex:1,border:"1px solid rgba(255,255,255,0.08)",color:"#94a3b8"}}>Cancelar</Btn>
+          <Btn onClick={handleConfirmImport} color="linear-gradient(135deg,#f59e0b,#d97706)" style={{flex:1}}>Restaurar</Btn>
         </div>
       </div>}
     </Modal>

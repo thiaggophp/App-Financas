@@ -88,7 +88,7 @@ Se os campos sumam, recriar via PATCH na API com token de superuser. Schemas das
 - **signup_requests**: email, name, requestedAt, status
 - **groups**: ownerEmail, name, color, createdAt
 - **members**: ownerEmail, groupId, name, memberEmail, color, createdAt
-- **entries**: ownerEmail, date, type, category, description, amount (number), member1Email, member2Email, split (bool), createdAt
+- **entries**: ownerEmail, date, type, category, description, value (number), memberId (text), split (bool), isPaid (bool), paidAt (text), createdAt
 - **goals**: ownerEmail, name, target (number), saved (number), createdAt
 
 ### Vite — index.html corrompido

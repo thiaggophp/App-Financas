@@ -12,7 +12,7 @@ import Modal from"./components/Modal";
 import{Btn,Input}from"./components/FormElements";
 
 const tabs=[
-  {id:"dash",label:"Home",icon:"🏠"},
+  {id:"dash",label:"Início",icon:"⬡"},
   {id:"entries",label:"Lançar",icon:"💳"},
   {id:"groups",label:"Grupos",icon:"👥"},
   {id:"goals",label:"Metas",icon:"🎯"},
@@ -83,7 +83,12 @@ export default function App(){
 
   const logout=()=>{setUser(null);localStorage.removeItem("financas_user");window.location.hash="";};
 
-  if(!ready)return(<div style={{minHeight:"100vh",background:"#0a0a1a",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#7c3aed",fontSize:18,animation:"pulse 1s infinite"}}>Carregando...</div></div>);
+  if(!ready)return(<div style={{minHeight:"100vh",background:"#0a0a1a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{textAlign:"center"}}>
+      <div style={{width:56,height:56,borderRadius:18,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:28,boxShadow:"0 8px 32px rgba(124,58,237,.4)"}}>💰</div>
+      <div style={{color:"#7c3aed",fontSize:14,animation:"pulse 1.2s infinite",fontWeight:600}}>Carregando...</div>
+    </div>
+  </div>);
   if(!user)return <Login onLogin={handleLogin}/>;
 
   const allTabs=user.role==="admin"?[...tabs,{id:"admin",label:"Admin",icon:"🛡️"}]:tabs;
@@ -102,26 +107,30 @@ export default function App(){
   };
 
   return(<div style={{minHeight:"100vh",background:"#0a0a1a",paddingBottom:80}}>
-    <div style={{padding:"16px 16px 8px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#0a0a1a",zIndex:100,borderBottom:"1px solid #1a1a30"}}>
+    <div style={{padding:"14px 20px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"rgba(10,10,26,.92)",zIndex:100,backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
       <div>
-        <h1 style={{margin:0,fontSize:20,fontWeight:800,background:"linear-gradient(135deg,#a78bfa,#7c3aed)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Finanças</h1>
-        <div style={{color:"#666",fontSize:11}}>Olá, {user.name}</div>
+        <div style={{fontSize:18,fontWeight:800,background:"linear-gradient(135deg,#c4b5fd,#7c3aed)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:-.3}}>Finanças</div>
+        <div style={{color:"#475569",fontSize:11,marginTop:1}}>Olá, {user.name.split(" ")[0]}</div>
       </div>
-      <button onClick={logout} style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:10,padding:"8px 14px",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>🚪 Sair</button>
+      <button onClick={logout} style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:10,padding:"7px 14px",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer"}}>Sair</button>
     </div>
 
-    <div style={{padding:16}} key={refreshKey}>{renderPage()}</div>
+    <div style={{padding:"16px 16px 0"}} key={refreshKey}>{renderPage()}</div>
 
-    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#0a0a1a",borderTop:"1px solid #1a1a30",display:"flex",justifyContent:"space-around",padding:"6px 0 env(safe-area-inset-bottom,8px)",zIndex:100}}>
-      {allTabs.map(t=><button key={t.id} onClick={()=>changeTab(t.id)}
-        style={{background:"none",border:"none",color:tab===t.id?"#7c3aed":"#555",display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",fontSize:9,fontWeight:tab===t.id?700:400,gap:1,padding:"4px 6px"}}>
-        <span style={{fontSize:18}}>{t.icon}</span>{t.label}
-      </button>)}
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(10,10,26,.95)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.06)",display:"flex",justifyContent:"space-around",padding:"8px 0 env(safe-area-inset-bottom,10px)",zIndex:100}}>
+      {allTabs.map(t=>{
+        const active=tab===t.id;
+        return(<button key={t.id} onClick={()=>changeTab(t.id)}
+          style={{background:"none",border:"none",color:active?"#a78bfa":"#475569",display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",gap:2,padding:"4px 8px",minWidth:44,transition:"color .15s"}}>
+          <div style={{width:36,height:28,borderRadius:10,background:active?"rgba(124,58,237,.2)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,transition:"all .15s"}}>{t.icon}</div>
+          <span style={{fontSize:9,fontWeight:active?700:500,letterSpacing:.3}}>{t.label}</span>
+        </button>);
+      })}
     </div>
 
     <Modal open={changePassModal} onClose={()=>{}} title="Redefina sua senha">
-      <p style={{color:"#888",fontSize:13,marginBottom:14}}>Você precisa criar uma nova senha antes de continuar.</p>
-      {passMsg&&<div style={{color:"#ef4444",fontSize:12,marginBottom:8}}>{passMsg}</div>}
+      <p style={{color:"#94a3b8",fontSize:13,marginBottom:16}}>Você precisa criar uma nova senha antes de continuar.</p>
+      {passMsg&&<div style={{color:"#ef4444",fontSize:12,marginBottom:10,background:"rgba(239,68,68,.1)",padding:"8px 12px",borderRadius:10}}>{passMsg}</div>}
       <Input label="Nova senha" type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="Mínimo 6 caracteres"/>
       <Input label="Confirmar senha" type="password" value={confirmPass} onChange={e=>setConfirmPass(e.target.value)} placeholder="Repita a senha"/>
       <Btn onClick={handleForceChangePass}>Salvar e Continuar</Btn>

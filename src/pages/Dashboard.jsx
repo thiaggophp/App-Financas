@@ -36,6 +36,18 @@ export default function Dashboard({user}){
 
   const pctGasto=receitas>0?Math.min(100,Math.round(despesas/receitas*100)):0;
 
+  // Previsão de fechamento do mês
+  const previsao=useMemo(()=>{
+    if(month!==now.getMonth()||year!==now.getFullYear())return null;
+    const diaAtual=now.getDate();
+    const diasNoMes=new Date(year,month+1,0).getDate();
+    if(diaAtual<5||despesas===0)return null;
+    const taxaDespesa=despesas/diaAtual;
+    const despesaProjetada=taxaDespesa*diasNoMes;
+    const saldoProjetado=receitas-despesaProjetada;
+    return{despesaProjetada,saldoProjetado,diaAtual,diasNoMes};
+  },[monthEntries,month,year]);
+
   return(<div style={{padding:"0 4px 8px"}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:20}}>
       <button onClick={prevM} style={{background:"rgba(124,58,237,.15)",border:"none",color:"#a78bfa",fontSize:16,cursor:"pointer",borderRadius:10,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center"}}>◀</button>
@@ -64,6 +76,17 @@ export default function Dashboard({user}){
       </div>
     </div>
 
+    {previsao&&<div style={{background:"rgba(124,58,237,.07)",borderRadius:14,padding:"12px 16px",marginBottom:12,border:"1px solid rgba(124,58,237,.2)"}}>
+      <div style={{color:"#a78bfa",fontSize:11,fontWeight:700,letterSpacing:.8,marginBottom:8}}>🔮 PREVISÃO DE FECHAMENTO — DIA {previsao.diaAtual}/{previsao.diasNoMes}</div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+        <span style={{color:"#94a3b8",fontSize:13}}>Despesa projetada</span>
+        <span style={{color:"#ef4444",fontWeight:700,fontSize:13}}>R$ {fmt(previsao.despesaProjetada)}</span>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <span style={{color:"#94a3b8",fontSize:13}}>Saldo projetado</span>
+        <span style={{color:previsao.saldoProjetado>=0?"#22c55e":"#ef4444",fontWeight:800,fontSize:15}}>R$ {fmt(previsao.saldoProjetado)}</span>
+      </div>
+    </div>}
     {totalPendente>0&&<div style={{background:"rgba(245,158,11,.08)",borderRadius:14,padding:"12px 16px",marginBottom:12,border:"1px solid rgba(245,158,11,.2)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <div>
         <div style={{color:"#fbbf24",fontSize:11,fontWeight:700}}>⏳ A QUITAR</div>

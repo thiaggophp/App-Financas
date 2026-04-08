@@ -13,8 +13,12 @@ const TODAY=new Date().toISOString().slice(0,10);
 export default function Entries({user}){
   const[entries,setEntries]=useState([]);const[members,setMembers]=useState([]);
   const[modal,setModal]=useState(false);const[filter,setFilter]=useState("all");
+  const[budgetModal,setBudgetModal]=useState(false);
+  const[budgets,setBudgets]=useState(()=>{try{return JSON.parse(localStorage.getItem("financas_budgets")||"{}")}catch{return{}}});
+  const[budgetForm,setBudgetForm]=useState({});
   const now=new Date();const[month,setMonth]=useState(now.getMonth());const[year,setYear]=useState(now.getFullYear());
-  const[form,setForm]=useState({type:"despesa",category:"Mercado",value:"",description:"",memberId:"",date:TODAY,split:false});
+  const[busca,setBusca]=useState("");
+  const[form,setForm]=useState({type:"despesa",category:"Mercado",value:"",description:"",memberId:"",date:TODAY,split:false,recorrente:false});
   const[edit,setEdit]=useState(null);
   const[quitarEntry,setQuitarEntry]=useState(null);const[paidDate,setPaidDate]=useState(TODAY);
   const[deleteConfirm,setDeleteConfirm]=useState(null);
@@ -30,7 +34,39 @@ export default function Entries({user}){
     if(filter==="quitada")return e.type==="despesa"&&e.isPaid;
     if(filter!=="all")return e.memberId===filter;
     return true;
-  }).sort((a,b)=>b.date.localeCompare(a.date));
+  }).filter(e=>!busca||e.description?.toLowerCase().includes(busca.toLowerCase())||e.category?.toLowerCase().includes(busca.toLowerCase()))
+  .sort((a,b)=>b.date.localeCompare(a.date));
+
+  const recorrentesAntMes=(()=>{
+    const antMonth=month===0?11:month-1;const antYear=month===0?year-1:year;
+    const antKey=antYear+"-"+String(antMonth+1).padStart(2,"0");
+    return entries.filter(e=>e.recorrente&&e.date&&e.date.startsWith(antKey));
+  })();
+  const temRecorrentesNaoCopiados=recorrentesAntMes.length>0&&!entries.some(e=>e.recorrente&&e.date&&e.date.startsWith(monthKey));
+
+  const copiarRecorrentes=async()=>{
+    for(const e of recorrentesAntMes){
+      const nova={...e,id:undefined,date:monthKey+"-"+e.date.slice(8,10),isPaid:false,paidAt:""};
+      await saveEntry(nova);
+    }
+    await reload();
+  };
+
+  const salvarBudgets=()=>{
+    const b={};Object.entries(budgetForm).forEach(([k,v])=>{const n=parseFloat(v);if(n>0)b[k]=n;});
+    setBudgets(b);localStorage.setItem("financas_budgets",JSON.stringify(b));setBudgetModal(false);
+  };
+
+  const exportarCSV=()=>{
+    const header="Data,Tipo,Categoria,Descrição,Membro,Valor,Status\n";
+    const rows=filtered.map(e=>{
+      const mem=getMemberName(e.memberId);
+      return[fmtDate(e.date),e.type,e.category,`"${e.description||""}"`,mem||"",e.value.toFixed(2),e.isPaid?"Pago":"Pendente"].join(",");
+    }).join("\n");
+    const blob=new Blob(["\uFEFF"+header+rows],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");
+    a.href=url;a.download=`extrato-${monthKey}.csv`;a.click();URL.revokeObjectURL(url);
+  };
 
   const totReceita=filtered.filter(e=>e.type==="receita").reduce((s,e)=>s+e.value,0);
   const totDespesa=filtered.filter(e=>e.type==="despesa").reduce((s,e)=>s+e.value,0);
@@ -73,7 +109,10 @@ export default function Entries({user}){
   return(<div style={{padding:"0 4px"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
       <h2 style={{color:"#f1f5f9",margin:0,fontSize:20,fontWeight:700}}>Lançamentos</h2>
-      <button onClick={openNew} style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)",border:"none",borderRadius:12,padding:"8px 16px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>+ Novo</button>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={exportarCSV} style={{background:"rgba(124,58,237,.1)",border:"1px solid rgba(124,58,237,.25)",borderRadius:12,padding:"8px 12px",color:"#a78bfa",fontSize:13,fontWeight:700,cursor:"pointer"}}>📥 CSV</button>
+        <button onClick={openNew} style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)",border:"none",borderRadius:12,padding:"8px 16px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>+ Novo</button>
+      </div>
     </div>
 
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:16}}>
@@ -93,9 +132,35 @@ export default function Entries({user}){
       </div>
     </div>
 
-    <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
+    {Object.keys(budgets).length>0&&<div style={{background:"rgba(124,58,237,.06)",border:"1px solid rgba(124,58,237,.15)",borderRadius:14,padding:"12px 14px",marginBottom:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <span style={{color:"#a78bfa",fontSize:11,fontWeight:700,letterSpacing:.8}}>ORÇAMENTO MENSAL</span>
+        <button onClick={()=>{setBudgetForm({...budgets});setBudgetModal(true)}} style={{background:"none",border:"none",color:"#7c3aed",fontSize:11,cursor:"pointer",fontWeight:600}}>editar</button>
+      </div>
+      {CATS.despesa.filter(c=>budgets[c]).map(c=>{
+        const gasto=entries.filter(e=>e.date&&e.date.startsWith(monthKey)&&e.type==="despesa"&&e.category===c).reduce((s,e)=>s+e.value,0);
+        const pct=Math.min(100,Math.round((gasto/budgets[c])*100));
+        return(<div key={c} style={{marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+            <span style={{color:"#94a3b8",fontSize:12}}>{ICONS[c]||""} {c}</span>
+            <span style={{color:pct>=100?"#ef4444":pct>=80?"#f59e0b":"#94a3b8",fontSize:12,fontWeight:600}}>R$ {fmt(gasto)} / {fmt(budgets[c])}</span>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.06)",borderRadius:4,height:5,overflow:"hidden"}}>
+            <div style={{background:pct>=100?"#ef4444":pct>=80?"#f59e0b":"#7c3aed",height:"100%",width:pct+"%",borderRadius:4,transition:"width .4s"}}/>
+          </div>
+        </div>);
+      })}
+    </div>}
+    {!Object.keys(budgets).length&&<button onClick={()=>{setBudgetForm({});setBudgetModal(true)}} style={{width:"100%",background:"rgba(124,58,237,.06)",border:"1px dashed rgba(124,58,237,.25)",borderRadius:12,padding:"8px",color:"#7c3aed",fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:10}}>📊 Definir orçamento por categoria</button>}
+
+    <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:4}}>
       {FILTERS.map(f2=><button key={f2.id} onClick={()=>setFilter(f2.id)} style={{padding:"6px 14px",borderRadius:20,border:"none",background:filter===f2.id?"#7c3aed":"rgba(255,255,255,0.05)",color:filter===f2.id?"#fff":"#94a3b8",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>{f2.label}</button>)}
     </div>
+    <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="🔍 Buscar por descrição ou categoria..." style={{width:"100%",padding:"10px 14px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,color:"#f1f5f9",fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10,colorScheme:"dark"}}/>
+    {temRecorrentesNaoCopiados&&<div style={{background:"rgba(124,58,237,.1)",border:"1px solid rgba(124,58,237,.25)",borderRadius:12,padding:"10px 14px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <span style={{color:"#c4b5fd",fontSize:13}}>🔁 {recorrentesAntMes.length} lançamento(s) recorrente(s) do mês anterior</span>
+      <button onClick={copiarRecorrentes} style={{background:"#7c3aed",border:"none",borderRadius:8,padding:"5px 12px",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>Copiar</button>
+    </div>}
 
     {filtered.map(e=>{
       const memberName=getMemberName(e.memberId);
@@ -108,7 +173,7 @@ export default function Entries({user}){
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:"#f1f5f9",fontWeight:600,fontSize:14}}>{e.category}</div>
-                <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{e.description||"—"}{memberName?` · ${memberName}`:""}{e.split?" (50/50)":""}</div>
+                <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{e.description||"—"}{memberName?` · ${memberName}`:""}{e.split?" (50/50)":""}{e.recorrente?" 🔁":""}</div>
               </div>
             </div>
             <div style={{textAlign:"right",flexShrink:0}}>
@@ -147,9 +212,12 @@ export default function Entries({user}){
       <Input label="Descrição" value={form.description||""} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Opcional"/>
       {members.length>0&&<Select label="Membro" value={form.memberId} onChange={e=>setForm({...form,memberId:e.target.value})} options={[{value:"",label:"— Nenhum —"},...members.map(m=>({value:m.id,label:m.name}))]}/>}
       <Input label="Data" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
-      {members.length>=2&&<label style={{display:"flex",alignItems:"center",gap:8,color:"#94a3b8",fontSize:13,marginBottom:16,cursor:"pointer"}}>
+      {members.length>=2&&<label style={{display:"flex",alignItems:"center",gap:8,color:"#94a3b8",fontSize:13,marginBottom:12,cursor:"pointer"}}>
         <input type="checkbox" checked={form.split||false} onChange={e=>setForm({...form,split:e.target.checked})}/> Dividir 50/50 entre membros
       </label>}
+      <label style={{display:"flex",alignItems:"center",gap:8,color:"#94a3b8",fontSize:13,marginBottom:16,cursor:"pointer"}}>
+        <input type="checkbox" checked={form.recorrente||false} onChange={e=>setForm({...form,recorrente:e.target.checked})}/> 🔁 Repetir todo mês (recorrente)
+      </label>
       <div style={{display:"flex",gap:8}}>
         {edit&&<Btn onClick={()=>setDeleteConfirm(edit)} color="rgba(239,68,68,.15)" style={{flex:1,border:"1px solid rgba(239,68,68,.3)",color:"#ef4444"}}>Excluir</Btn>}
         <Btn onClick={save} style={{flex:edit?1:undefined}}>Salvar</Btn>
@@ -173,6 +241,15 @@ export default function Entries({user}){
           <Btn onClick={confirmQuitar} color="linear-gradient(135deg,#22c55e,#16a34a)" style={{flex:1}}>Confirmar</Btn>
         </div>
       </>}
+    </Modal>
+
+    <Modal open={budgetModal} onClose={()=>setBudgetModal(false)} title="Orçamento por Categoria">
+      <p style={{color:"#64748b",fontSize:12,marginBottom:14}}>Defina um limite mensal por categoria de despesa (deixe em branco para sem limite).</p>
+      {CATS.despesa.map(c=><div key={c} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+        <span style={{color:"#94a3b8",fontSize:13,flex:1}}>{ICONS[c]||""} {c}</span>
+        <input type="number" value={budgetForm[c]||""} onChange={e=>setBudgetForm(b=>({...b,[c]:e.target.value}))} placeholder="Sem limite" inputMode="decimal" style={{width:110,padding:"7px 10px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"#f1f5f9",fontSize:13,outline:"none",colorScheme:"dark",textAlign:"right"}}/>
+      </div>)}
+      <Btn onClick={salvarBudgets}>Salvar Orçamentos</Btn>
     </Modal>
 
     <Modal open={!!deleteConfirm} onClose={()=>setDeleteConfirm(null)} title="Excluir lançamento">

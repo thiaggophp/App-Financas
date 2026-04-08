@@ -13,6 +13,7 @@ export default function Groups({user}){
   const[groupName,setGroupName]=useState("");
   const[memberName,setMemberName]=useState("");const[memberEmail,setMemberEmail]=useState("");
   const[editGroup,setEditGroup]=useState(null);const[msg,setMsg]=useState(null);const[loading,setLoading]=useState(false);
+  const[deleteGroupModal,setDeleteGroupModal]=useState(null);const[deleteMemberModal,setDeleteMemberModal]=useState(null);
 
   const reload=async()=>{
     setGroups(await getGroups(user.email));
@@ -29,10 +30,9 @@ export default function Groups({user}){
   };
 
   const removeG=async(g)=>{
-    if(!confirm("Excluir grupo "+g.name+" e todos os membros?")){return}
     const gMembers=await getMembersByGroup(g.id);
     for(const m of gMembers)await deleteMember(m.id);
-    await deleteGroup(g.id);if(selGroup?.id===g.id)setSelGroup(null);await reload();
+    await deleteGroup(g.id);if(selGroup?.id===g.id)setSelGroup(null);setDeleteGroupModal(null);await reload();
   };
 
   const saveM=async()=>{
@@ -63,11 +63,9 @@ export default function Groups({user}){
   };
 
   const removeM=async(m)=>{
-    if(!confirm("Remover "+m.name+" do grupo?")){return}
     await deleteMember(m.id);
-    // Remove conta vinculada se existir
     if(m.memberEmail){const{getAccount}=await import("../db");const acc=await getAccount(m.memberEmail);if(acc&&acc.parentEmail===user.email)await deleteAccount(m.memberEmail)}
-    await reload();
+    setDeleteMemberModal(null);await reload();
   };
 
   const toggleBlockMember=async(m)=>{
@@ -114,7 +112,7 @@ export default function Groups({user}){
         <div style={{display:"flex",gap:6}}>
           <Btn onClick={()=>{setMemberModal(true);setMsg(null)}} style={{width:"auto",padding:"6px 12px",fontSize:12}}>+ Membro</Btn>
           <button onClick={()=>{setEditGroup(selGroup);setGroupName(selGroup.name);setGroupModal(true)}} style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:8,padding:"6px 8px",fontSize:12,color:"#7c3aed",cursor:"pointer"}}>✏️</button>
-          <button onClick={()=>removeG(selGroup)} style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:8,padding:"6px 8px",fontSize:12,color:"#ef4444",cursor:"pointer"}}>🗑</button>
+          <button onClick={()=>setDeleteGroupModal(selGroup)} style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:8,padding:"6px 8px",fontSize:12,color:"#ef4444",cursor:"pointer"}}>🗑</button>
         </div>
       </div>
 
@@ -134,7 +132,7 @@ export default function Groups({user}){
             <div style={{display:"flex",gap:6}}>
               {m.memberEmail&&<button onClick={()=>toggleBlockMember(m)} title={status==="active"?"Bloquear":"Desbloquear"}
                 style={{background:"#1a1a30",border:"1px solid #2a2a4a",borderRadius:8,padding:"6px 8px",fontSize:12,color:status==="active"?"#f59e0b":"#22c55e",cursor:"pointer"}}>{status==="active"?"🚫":"✅"}</button>}
-              <button onClick={()=>removeM(m)} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:14}}>🗑</button>
+              <button onClick={()=>setDeleteMemberModal(m)} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:14}}>🗑</button>
             </div>
           </div>
         </Card>);
@@ -153,6 +151,27 @@ export default function Groups({user}){
       {memberEmail.trim()&&<p style={{color:"#888",fontSize:12,margin:"4px 0 8px"}}>Uma senha temporária será enviada para este e-mail. No primeiro acesso, o usuário deverá definir uma nova senha.</p>}
       {msg&&<div style={{color:msg.t==="error"?"#ef4444":"#22c55e",fontSize:12,marginBottom:8}}>{msg.m}</div>}
       <Btn onClick={saveM} disabled={loading}>{loading?"Criando...":"Adicionar Membro"}</Btn>
+    </Modal>
+
+    <Modal open={!!deleteGroupModal} onClose={()=>setDeleteGroupModal(null)} title="Excluir grupo">
+      {deleteGroupModal&&<>
+        <p style={{color:"#94a3b8",fontSize:14,marginBottom:8,textAlign:"center"}}>Deseja excluir o grupo <strong style={{color:"#f1f5f9"}}>{deleteGroupModal.name}</strong>?</p>
+        <p style={{color:"#ef4444",fontSize:12,marginBottom:20,textAlign:"center"}}>Todos os membros do grupo também serão removidos.</p>
+        <div style={{display:"flex",gap:8}}>
+          <Btn onClick={()=>setDeleteGroupModal(null)} color="rgba(255,255,255,0.06)" style={{flex:1,border:"1px solid rgba(255,255,255,0.08)",color:"#94a3b8"}}>Cancelar</Btn>
+          <Btn onClick={()=>removeG(deleteGroupModal)} color="linear-gradient(135deg,#ef4444,#dc2626)" style={{flex:1}}>Excluir</Btn>
+        </div>
+      </>}
+    </Modal>
+
+    <Modal open={!!deleteMemberModal} onClose={()=>setDeleteMemberModal(null)} title="Remover membro">
+      {deleteMemberModal&&<>
+        <p style={{color:"#94a3b8",fontSize:14,marginBottom:20,textAlign:"center"}}>Deseja remover <strong style={{color:"#f1f5f9"}}>{deleteMemberModal.name}</strong> do grupo?{deleteMemberModal.memberEmail?" A conta de login também será excluída.":""}</p>
+        <div style={{display:"flex",gap:8}}>
+          <Btn onClick={()=>setDeleteMemberModal(null)} color="rgba(255,255,255,0.06)" style={{flex:1,border:"1px solid rgba(255,255,255,0.08)",color:"#94a3b8"}}>Cancelar</Btn>
+          <Btn onClick={()=>removeM(deleteMemberModal)} color="linear-gradient(135deg,#ef4444,#dc2626)" style={{flex:1}}>Remover</Btn>
+        </div>
+      </>}
     </Modal>
   </div>);
 }

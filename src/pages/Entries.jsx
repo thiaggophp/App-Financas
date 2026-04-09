@@ -45,6 +45,8 @@ export default function Entries({user}){
     if(filter==="despesa")return e.type==="despesa";
     if(filter==="pendente")return e.type==="despesa"&&!e.isPaid;
     if(filter==="quitada")return e.type==="despesa"&&e.isPaid;
+    if(filter==="_privado")return!e.groupId;
+    if(filter.startsWith("g_"))return e.groupId===filter.slice(2);
     if(filter!=="all")return e.memberId===filter;
     return true;
   }).filter(e=>!busca||e.description?.toLowerCase().includes(busca.toLowerCase())||e.category?.toLowerCase().includes(busca.toLowerCase()))
@@ -116,8 +118,13 @@ export default function Entries({user}){
   const prevM=()=>{if(month===0){setMonth(11);setYear(y=>y-1)}else setMonth(m=>m-1)};
   const nextM=()=>{if(month===11){setMonth(0);setYear(y=>y+1)}else setMonth(m=>m+1)};
   const getMemberName=(id)=>members.find(m=>m.id===id)?.name||"";
+  const getGroupName=(id)=>groups.find(g=>g.id===id)?.name||"";
 
-  const FILTERS=[{id:"all",label:"Todos"},{id:"receita",label:"Receitas"},{id:"despesa",label:"Despesas"},{id:"pendente",label:"Pendentes"},{id:"quitada",label:"Quitadas"},...members.map(m=>({id:m.id,label:m.name}))];
+  const FILTERS=[
+    {id:"all",label:"Todos"},{id:"receita",label:"Receitas"},{id:"despesa",label:"Despesas"},{id:"pendente",label:"Pendentes"},{id:"quitada",label:"Quitadas"},
+    ...members.map(m=>({id:m.id,label:m.name})),
+    ...(!isSubUser&&groups.length>0?[{id:"_privado",label:"🔒 Privados"},...groups.map(g=>({id:"g_"+g.id,label:"👥 "+g.name}))]:[])
+  ];
 
   return(<div style={{padding:"0 4px"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -177,6 +184,7 @@ export default function Entries({user}){
 
     {filtered.map(e=>{
       const memberName=getMemberName(e.memberId);
+      const groupName=getGroupName(e.groupId);
       return(<div key={e.id} style={{background:"#111127",borderRadius:16,marginBottom:10,border:"1px solid rgba(255,255,255,0.06)",overflow:"hidden"}}>
         <div onClick={()=>openEdit(e)} style={{padding:"14px 16px",cursor:"pointer"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
@@ -187,6 +195,8 @@ export default function Entries({user}){
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:"#f1f5f9",fontWeight:600,fontSize:14}}>{e.category}</div>
                 <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{e.description||"—"}{memberName?` · ${memberName}`:""}{e.split?" (50/50)":""}{e.recorrente?" 🔁":""}</div>
+                {groupName&&<span style={{display:"inline-block",background:"rgba(124,58,237,.12)",color:"#a78bfa",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:10,marginTop:3}}>👥 {groupName}</span>}
+                {!groupName&&!isSubUser&&<span style={{display:"inline-block",background:"rgba(255,255,255,.04)",color:"#334155",fontSize:10,padding:"1px 7px",borderRadius:10,marginTop:3}}>🔒 privado</span>}
               </div>
             </div>
             <div style={{textAlign:"right",flexShrink:0}}>
@@ -224,7 +234,10 @@ export default function Entries({user}){
       <Input label="Valor (R$)" type="number" value={form.value} onChange={e=>setForm({...form,value:e.target.value})} placeholder="0,00" inputMode="decimal"/>
       <Input label="Descrição" value={form.description||""} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Opcional"/>
       {members.length>0&&<Select label="Membro" value={form.memberId} onChange={e=>setForm({...form,memberId:e.target.value})} options={[{value:"",label:"— Nenhum —"},...members.map(m=>({value:m.id,label:m.name}))]}/>}
-      {groups.length>0&&<Select label="Grupo" value={form.groupId} onChange={e=>setForm({...form,groupId:e.target.value})} options={[{value:"",label:"— Nenhum —"},...groups.map(g=>({value:g.id,label:g.name}))]} disabled={isSubUser}/>}
+      {groups.length>0&&<>
+        <Select label="Grupo (compartilhar com membros)" value={form.groupId} onChange={e=>setForm({...form,groupId:e.target.value})} options={[{value:"",label:"🔒 Privado (só você)"},...groups.map(g=>({value:g.id,label:"👥 "+g.name}))]} disabled={isSubUser}/>
+        {!isSubUser&&!form.groupId&&<p style={{color:"#475569",fontSize:11,margin:"-10px 0 12px",lineHeight:1.5}}>Sem grupo selecionado, só você verá este lançamento.</p>}
+      </>}
       <Input label="Data" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
       {members.length>=2&&<label style={{display:"flex",alignItems:"center",gap:8,color:"#94a3b8",fontSize:13,marginBottom:12,cursor:"pointer"}}>
         <input type="checkbox" checked={form.split||false} onChange={e=>setForm({...form,split:e.target.checked})}/> Dividir 50/50 entre membros

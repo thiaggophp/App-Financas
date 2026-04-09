@@ -1,5 +1,5 @@
 import{useState,useEffect}from"react";
-import{getGroups,saveGroup,deleteGroup,getMembers,getMembersByGroup,saveMember,deleteMember,saveAccount,deleteAccount,getSubUsers}from"../db";
+import{getGroups,saveGroup,deleteGroup,getMembers,getMembersByGroup,saveMember,deleteMember,saveAccount,deleteAccount,getSubUsers,getAccount}from"../db";
 import{sendPasswordEmail,generatePassword}from"../emailService";
 import{Btn,Input}from"../components/FormElements";
 import Modal from"../components/Modal";import Card from"../components/Card";import Avatar from"../components/Avatar";
@@ -31,7 +31,10 @@ export default function Groups({user}){
 
   const removeG=async(g)=>{
     const gMembers=await getMembersByGroup(g.id);
-    for(const m of gMembers)await deleteMember(m.id);
+    for(const m of gMembers){
+      await deleteMember(m.id);
+      if(m.memberEmail){const acc=await getAccount(m.memberEmail);if(acc&&acc.parentEmail===user.email)await deleteAccount(m.memberEmail);}
+    }
     await deleteGroup(g.id);if(selGroup?.id===g.id)setSelGroup(null);setDeleteGroupModal(null);await reload();
   };
 

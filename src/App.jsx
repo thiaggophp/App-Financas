@@ -38,9 +38,9 @@ export default function App(){
       const cached=JSON.parse(saved);
       try{
         const fresh=await getAccount(cached.email);
-        if(fresh&&fresh.status==="blocked"){
+        if(!fresh||fresh.status==="blocked"){
           localStorage.removeItem("financas_user");
-        }else if(fresh&&fresh.status==="active"){
+        }else if(fresh.status==="active"){
           setUser(fresh);localStorage.setItem("financas_user",JSON.stringify(fresh));
           if(fresh.mustChangePassword)setChangePassModal(true);
         }else{

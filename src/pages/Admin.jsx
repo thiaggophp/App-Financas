@@ -1,5 +1,5 @@
 import{useState,useEffect}from"react";
-import{getAllAccounts,saveAccount,deleteAccount,getSignupRequests,deleteSignupRequest,pb}from"../db";
+import{getAllAccounts,saveAccount,deleteUserCascade,getSignupRequests,deleteSignupRequest,pb}from"../db";
 import{sendPasswordEmail,generatePassword}from"../emailService";
 import{Btn,Input}from"../components/FormElements";
 import Modal from"../components/Modal";
@@ -36,7 +36,7 @@ export default function Admin({currentUser}){
     try{
       await sendPasswordEmail(newName.trim(),e,pass);
       await saveAccount({email:e,name:newName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false});
-      setMsg({t:"success",m:"Usuário criado! Senha enviada para "+e});setNewName("");setNewEmail("");await load();
+      setMsg({t:"success",m:`Usuário criado! Senha provisória: ${pass} — E-mail enviado para ${e}`});setNewName("");setNewEmail("");await load();
     }catch(err){setMsg({t:"error",m:"Erro: "+err.message})}
     setLoading(false);
   };
@@ -47,7 +47,7 @@ export default function Admin({currentUser}){
       await sendPasswordEmail(req.name,req.email,pass);
       await saveAccount({email:req.email,name:req.name,password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false});
       await deleteSignupRequest(req.email);
-      setMsg({t:"success",m:req.name+" aprovado! Senha enviada."});await load();
+      setMsg({t:"success",m:`${req.name} aprovado! Senha provisória: ${pass}`});await load();
     }catch(err){setMsg({t:"error",m:"Erro: "+err.message})}
     setLoading(false);
   };
@@ -64,7 +64,7 @@ export default function Admin({currentUser}){
 
   const handleDelete=async(acc)=>{
     if(acc.protected)return;
-    await deleteAccount(acc.email);setDeleteModal(null);await load();
+    await deleteUserCascade(acc.email);setDeleteModal(null);await load();
   };
 
   const handleChangePassword=async()=>{

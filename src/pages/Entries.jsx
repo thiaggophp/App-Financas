@@ -86,7 +86,7 @@ export default function Entries({user}){
   const totReceita=filtered.filter(e=>e.type==="receita").reduce((s,e)=>s+e.value,0);
   const totDespesa=filtered.filter(e=>e.type==="despesa").reduce((s,e)=>s+e.value,0);
 
-  const openNew=()=>{setEdit(null);setForm({type:"despesa",category:"Mercado",value:"",description:"",memberId:members[0]?.id||"",groupId:myGroupId||groups[0]?.id||"",date:TODAY,split:false,recorrente:false});setModal(true)};
+  const openNew=()=>{setEdit(null);setForm({type:"despesa",category:"Mercado",value:"",description:"",memberId:members.find(m=>m.memberEmail===user.email)?.id||"",groupId:myGroupId||groups[0]?.id||"",date:TODAY,split:false,recorrente:false});setModal(true)};
   const openEdit=(e)=>{setEdit(e);setForm({...e,value:String(e.value)});setModal(true)};
 
   const save=async()=>{
@@ -233,7 +233,6 @@ export default function Entries({user}){
       <Select label="Categoria" value={form.category} onChange={e=>setForm({...form,category:e.target.value})} options={CATS[form.type].map(c=>({value:c,label:(ICONS[c]||"")+" "+c}))}/>
       <Input label="Valor (R$)" type="number" value={form.value} onChange={e=>setForm({...form,value:e.target.value})} placeholder="0,00" inputMode="decimal"/>
       <Input label="Descrição" value={form.description||""} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Opcional"/>
-      {members.length>0&&<Select label="Membro" value={form.memberId} onChange={e=>setForm({...form,memberId:e.target.value})} options={[{value:"",label:"— Nenhum —"},...members.map(m=>({value:m.id,label:m.name}))]}/>}
       {groups.length>0&&<>
         <Select label="Grupo (compartilhar com membros)" value={form.groupId} onChange={e=>setForm({...form,groupId:e.target.value})} options={[{value:"",label:"🔒 Privado (só você)"},...groups.map(g=>({value:g.id,label:"👥 "+g.name}))]} disabled={isSubUser}/>
         {!isSubUser&&!form.groupId&&<p style={{color:"#475569",fontSize:11,margin:"-10px 0 12px",lineHeight:1.5}}>Sem grupo selecionado, só você verá este lançamento.</p>}

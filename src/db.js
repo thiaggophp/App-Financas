@@ -144,6 +144,35 @@ export async function importAllData(data) {
   for (const m of data.members || []) { m.id = null; await saveMember(m); }
 }
 
+// ─── CASCADE DELETE USER ───
+export async function deleteUserCascade(email) {
+  try {
+    // Delete entries
+    const entries = await getEntries(email);
+    for (const e of entries) await deleteEntry(e.id);
+    // Delete goals
+    const goals = await getGoals(email);
+    for (const g of goals) await deleteGoal(g.id);
+    // Delete members and their sub-user accounts
+    const members = await getMembers(email);
+    for (const m of members) {
+      if (m.memberEmail) {
+        const sub = await getAccount(m.memberEmail);
+        if (sub && sub.parentEmail === email) await deleteAccount(m.memberEmail);
+      }
+      await deleteMember(m.id);
+    }
+    // Delete groups
+    const groups = await getGroups(email);
+    for (const g of groups) await deleteGroup(g.id);
+    // Delete any remaining sub-users
+    const subUsers = await pb.collection("accounts").getFullList({ filter: `parentEmail="${email}"` }).catch(() => []);
+    for (const s of subUsers) await pb.collection("accounts").delete(s.id).catch(() => {});
+    // Delete account
+    await deleteAccount(email);
+  } catch {}
+}
+
 // ─── INIT ADMIN ───
 export async function initAdmin() {
   // Admin account is created once via API — no credentials compiled into the bundle

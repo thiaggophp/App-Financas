@@ -41,18 +41,32 @@ export default function Groups({user}){
     setLoading(true);setMsg(null);
     const e=memberEmail.trim().toLowerCase();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){setMsg({t:"error",m:"E-mail inválido"});setLoading(false);return}
-    if(members.some(m=>m.memberEmail===e)){setMsg({t:"error",m:"E-mail já cadastrado como membro"});setLoading(false);return}
-    const{getAccount}=await import("../db");
-    const existing=await getAccount(e);
-    if(existing){setMsg({t:"error",m:"E-mail já cadastrado no sistema"});setLoading(false);return}
-    const pass=generatePassword();
-    try{
-      await sendPasswordEmail(memberName.trim(),e,pass);
-      await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
-      const m={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
-      await saveMember(m);
-      setMsg({t:"success",m:"Membro criado! Senha temporária enviada para "+e+". No primeiro acesso ele deverá definir uma nova senha."});
-    }catch(err){setMsg({t:"error",m:"Erro: "+err.message});setLoading(false);return}
+    if(members.some(m=>m.memberEmail===e)){setMsg({t:"error",m:"E-mail já cadastrado como membro neste grupo"});setLoading(false);return}
+    const mRec={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
+    // Se for o próprio dono, só cria o registro de membro (conta já existe)
+    const isSelf=e===user.email.toLowerCase();
+    if(isSelf){
+      await saveMember(mRec);
+      setMsg({t:"success",m:"Você foi adicionado como membro do grupo "+selGroup.name+"!"});
+    }else{
+      const{getAccount}=await import("../db");
+      const existing=await getAccount(e);
+      // Bloqueia somente se a conta pertence a outro dono (não é sub-usuário deste)
+      if(existing&&existing.parentEmail!==user.email){
+        setMsg({t:"error",m:"E-mail já cadastrado no sistema por outro usuário"});setLoading(false);return;
+      }
+      if(!existing){
+        const pass=generatePassword();
+        try{
+          await sendPasswordEmail(memberName.trim(),e,pass);
+          await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
+        }catch(err){setMsg({t:"error",m:"Erro ao enviar e-mail: "+err.message});setLoading(false);return}
+        setMsg({t:"success",m:"Membro criado! Senha temporária enviada para "+e+"."});
+      }else{
+        setMsg({t:"success",m:"Membro adicionado ao grupo!"});
+      }
+      await saveMember(mRec);
+    }
     setMemberModal(false);setMemberName("");setMemberEmail("");
     setLoading(false);await reload();
   };

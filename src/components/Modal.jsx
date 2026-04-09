@@ -1,6 +1,15 @@
+import{useRef}from"react";
 export default function Modal({open,onClose,title,children}){
+  const bdTouch=useRef(false);
+  const isTouch=useRef(false);
+  const onBdStart=(e)=>{isTouch.current=true;bdTouch.current=(e.target===e.currentTarget)};
+  const onBdEnd=(e)=>{if(bdTouch.current&&e.target===e.currentTarget)onClose();bdTouch.current=false};
+  const onBdClick=(e)=>{if(!isTouch.current&&e.target===e.currentTarget)onClose()};
   if(!open)return null;
-  return(<div onClick={onClose} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(0,0,0,.75)",display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)",animation:"fadeIn .2s ease"}}>
+  return(<div
+    onTouchStart={onBdStart} onTouchEnd={onBdEnd} onTouchCancel={()=>{bdTouch.current=false}}
+    onClick={onBdClick}
+    style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(0,0,0,.75)",display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)",animation:"fadeIn .2s ease"}}>
     <div onClick={e=>e.stopPropagation()} style={{background:"#0e0e24",borderRadius:"28px 28px 0 0",padding:"20px 20px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",animation:"slideUp .25s ease",border:"1px solid rgba(255,255,255,0.07)",borderBottom:"none"}}>
       <div style={{width:36,height:4,background:"rgba(255,255,255,0.12)",borderRadius:2,margin:"0 auto 20px"}}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>

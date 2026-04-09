@@ -1,6 +1,6 @@
 import{useState,useEffect}from"react";
 import{getGoals,saveGoal,deleteGoal}from"../db";
-import{Btn,Input}from"../components/FormElements";
+import{Btn,Input,InputMoney}from"../components/FormElements";
 import Modal from"../components/Modal";
 
 function fmt(v){return(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}
@@ -72,8 +72,8 @@ export default function Goals({user}){
 
     <Modal open={modal} onClose={()=>setModal(false)} title={edit?"Editar Meta":"Nova Meta"}>
       <Input label="Nome da meta" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ex: Viagem, Reserva..."/>
-      <Input label="Valor alvo (R$)" type="number" value={form.target} onChange={e=>setForm({...form,target:e.target.value})} placeholder="0,00" inputMode="decimal"/>
-      {edit&&<Input label="Valor já guardado (R$)" type="number" value={String(form.saved)} onChange={e=>setForm({...form,saved:e.target.value})} placeholder="0,00" inputMode="decimal"/>}
+      <InputMoney label="Valor alvo (R$)" value={form.target} onChange={e=>setForm({...form,target:e.target.value})} placeholder="0,00"/>
+      {edit&&<InputMoney label="Valor já guardado (R$)" value={String(form.saved)} onChange={e=>setForm({...form,saved:e.target.value})} placeholder="0,00"/>}
       <Btn onClick={save}>{edit?"Salvar Alterações":"Criar Meta"}</Btn>
     </Modal>
 
@@ -83,7 +83,7 @@ export default function Goals({user}){
           <span style={{color:"#94a3b8",fontSize:14}}>{addModal.name}</span>
           <span style={{color:"#a78bfa",fontWeight:700}}>R$ {fmt(addModal.saved)} / {fmt(addModal.target)}</span>
         </div>
-        <Input label="Valor a adicionar (R$)" type="number" value={addValue} onChange={e=>setAddValue(e.target.value)} placeholder="0,00" inputMode="decimal"/>
+        <InputMoney label="Valor a adicionar (R$)" value={addValue} onChange={e=>setAddValue(e.target.value)} placeholder="0,00"/>
         <Btn onClick={addAmount} color="linear-gradient(135deg,#22c55e,#16a34a)">Adicionar</Btn>
       </>}
     </Modal>

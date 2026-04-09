@@ -1,6 +1,6 @@
 import{useState,useEffect}from"react";
 import{getEntries,saveEntry,deleteEntry,getMembers,getGroups,getMemberByEmail}from"../db";
-import{Btn,Input,Select}from"../components/FormElements";
+import{Btn,Input,InputMoney,Select}from"../components/FormElements";
 import Modal from"../components/Modal";import Card from"../components/Card";
 
 const CATS={receita:["Salário","Freelance","Aluguel","Investimento","Outros"],despesa:["Moradia","Alimentação","Transporte","Saúde","Educação","Lazer","Vestuário","Contas","Mercado","Pets","Assinaturas","Outros"]};
@@ -231,7 +231,7 @@ export default function Entries({user}){
           {t==="receita"?"↑ Receita":"↓ Despesa"}</button>)}
       </div>
       <Select label="Categoria" value={form.category} onChange={e=>setForm({...form,category:e.target.value})} options={CATS[form.type].map(c=>({value:c,label:(ICONS[c]||"")+" "+c}))}/>
-      <Input label="Valor (R$)" type="number" value={form.value} onChange={e=>setForm({...form,value:e.target.value})} placeholder="0,00" inputMode="decimal"/>
+      <InputMoney label="Valor (R$)" value={form.value} onChange={e=>setForm({...form,value:e.target.value})} placeholder="0,00"/>
       <Input label="Descrição" value={form.description||""} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Opcional"/>
       {groups.length>0&&<>
         <Select label="Grupo (compartilhar com membros)" value={form.groupId} onChange={e=>setForm({...form,groupId:e.target.value})} options={[{value:"",label:"🔒 Privado (só você)"},...groups.map(g=>({value:g.id,label:"👥 "+g.name}))]} disabled={isSubUser}/>
@@ -273,7 +273,7 @@ export default function Entries({user}){
       <p style={{color:"#64748b",fontSize:12,marginBottom:14}}>Defina um limite mensal por categoria de despesa (deixe em branco para sem limite).</p>
       {CATS.despesa.map(c=><div key={c} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
         <span style={{color:"#94a3b8",fontSize:13,flex:1}}>{ICONS[c]||""} {c}</span>
-        <input type="number" value={budgetForm[c]||""} onChange={e=>setBudgetForm(b=>({...b,[c]:e.target.value}))} placeholder="Sem limite" inputMode="decimal" style={{width:110,padding:"7px 10px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"#f1f5f9",fontSize:13,outline:"none",colorScheme:"dark",textAlign:"right"}}/>
+        <input type="text" inputMode="decimal" value={budgetForm[c]||""} onChange={e=>setBudgetForm(b=>({...b,[c]:e.target.value.replace(/[^0-9.,]/g,"").replace(",",".")}))} onBlur={e=>{const n=parseFloat(e.target.value);if(!isNaN(n)&&n>0)setBudgetForm(b=>({...b,[c]:n.toFixed(2)}))}} placeholder="Sem limite" style={{width:110,padding:"7px 10px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"#f1f5f9",fontSize:13,outline:"none",colorScheme:"dark",textAlign:"right"}}/>
       </div>)}
       <Btn onClick={salvarBudgets}>Salvar Orçamentos</Btn>
     </Modal>

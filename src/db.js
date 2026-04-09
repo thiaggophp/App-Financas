@@ -76,6 +76,10 @@ export async function getMembersByGroup(groupId) {
   try { return await pb.collection("members").getFullList({ filter: `groupId="${groupId}"` }); }
   catch { return []; }
 }
+export async function getMemberByEmail(email) {
+  try { return await pb.collection("members").getFirstListItem(`memberEmail="${email}"`); }
+  catch { return null; }
+}
 export async function saveMember(m) {
   try {
     if (m.id) return await pb.collection("members").update(m.id, m);
@@ -89,9 +93,12 @@ export async function deleteMember(id) {
 }
 
 // ─── ENTRIES ───
-export async function getEntries(ownerEmail) {
-  try { return await pb.collection("entries").getFullList({ filter: `ownerEmail="${ownerEmail}"` }); }
-  catch { return []; }
+export async function getEntries(ownerEmail, groupId=null) {
+  try {
+    let filter=`ownerEmail="${ownerEmail}"`;
+    if(groupId)filter+=` && groupId="${groupId}"`;
+    return await pb.collection("entries").getFullList({ filter });
+  } catch { return []; }
 }
 export async function saveEntry(e) {
   try {

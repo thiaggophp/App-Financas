@@ -1,5 +1,5 @@
 import{useState,useEffect,useMemo}from"react";
-import{getEntries,getGoals,getGroups,getMembers}from"../db";
+import{getEntries,getGoals,getGroups,getMembers,getMemberByEmail}from"../db";
 import Card from"../components/Card";
 
 const MONTHS=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -11,10 +11,19 @@ export default function Dashboard({user}){
   const[groups,setGroups]=useState([]);const[members,setMembers]=useState([]);
   const now=new Date();const[month,setMonth]=useState(now.getMonth());const[year,setYear]=useState(now.getFullYear());
 
+  const ownerEmail=user.parentEmail||user.email;
   useEffect(()=>{
     (async()=>{
-      setEntries(await getEntries(user.email));setGoals(await getGoals(user.email));
-      setGroups(await getGroups(user.email));setMembers(await getMembers(user.email));
+      if(user.parentEmail){
+        const memberRec=await getMemberByEmail(user.email);
+        const gid=memberRec?.groupId||"";
+        setEntries(await getEntries(ownerEmail,gid));
+      }else{
+        setEntries(await getEntries(ownerEmail));
+      }
+      setGoals(await getGoals(ownerEmail));
+      setGroups(await getGroups(ownerEmail));
+      setMembers(await getMembers(ownerEmail));
     })();
   },[user.email]);
 

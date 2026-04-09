@@ -35,6 +35,9 @@ export default function Config({user,onUpdate}){
     if(onUpdate)onUpdate(user);
   };
 
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone===true;
+
   return(<div style={{padding:"0 4px"}}>
     <h2 style={{color:"#f1f5f9",margin:"0 0 18px",fontSize:20,fontWeight:700}}>Configurações</h2>
 
@@ -68,6 +71,20 @@ export default function Config({user,onUpdate}){
           style={{flex:1,padding:"11px",background:"rgba(59,130,246,.1)",border:"1px solid rgba(59,130,246,.2)",borderRadius:12,color:"#60a5fa",fontSize:13,fontWeight:700,cursor:"pointer"}}>
           📥 Restaurar
         </button>
+      </div>
+    </div>
+
+    {isIOS&&!isStandalone&&<div style={{background:"rgba(14,165,233,.08)",borderRadius:18,padding:"14px 18px",marginBottom:12,border:"1px solid rgba(14,165,233,.2)"}}>
+      <div style={{color:"#38bdf8",fontSize:11,fontWeight:700,letterSpacing:.8,marginBottom:6}}>📲 INSTALAR NO IPHONE / IPAD</div>
+      <div style={{color:"#64748b",fontSize:13,lineHeight:1.6}}>Toque em <strong style={{color:"#94a3b8"}}>Compartilhar</strong> (ícone ↑ no Safari) → <strong style={{color:"#94a3b8"}}>"Adicionar à Tela de Início"</strong></div>
+    </div>}
+
+    <div style={{background:"#111127",borderRadius:18,padding:"18px",marginBottom:12,border:"1px solid rgba(255,255,255,0.06)"}}>
+      <div style={{color:"#64748b",fontSize:11,fontWeight:700,letterSpacing:.8,marginBottom:10}}>SOBRE O APP</div>
+      <div style={{color:"#475569",fontSize:13,lineHeight:1.8}}>
+        <div>💰 Finanças Casa v1.0</div>
+        <div>Controle financeiro doméstico compartilhado</div>
+        <div style={{marginTop:8,color:"#334155"}}>Receitas/despesas, grupos e membros, metas de economia, orçamento por categoria, relatórios, backup</div>
       </div>
     </div>
 

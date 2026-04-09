@@ -37,27 +37,22 @@ export default function Groups({user}){
 
   const saveM=async()=>{
     if(!memberName.trim()||!selGroup){setMsg({t:"error",m:"Preencha o nome"});return}
+    if(!memberEmail.trim()){setMsg({t:"error",m:"E-mail é obrigatório"});return}
     setLoading(true);setMsg(null);
-    // Se tiver email, cria conta vinculada
-    if(memberEmail.trim()){
-      const e=memberEmail.trim().toLowerCase();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){setMsg({t:"error",m:"E-mail inválido"});setLoading(false);return}
-      const{getAccount}=await import("../db");
-      const existing=await getAccount(e);
-      if(existing){setMsg({t:"error",m:"E-mail já cadastrado no sistema"});setLoading(false);return}
-      const pass=generatePassword();
-      try{
-        await sendPasswordEmail(memberName.trim(),e,pass);
-        await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
-        const m={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
-        await saveMember(m);
-        setMsg({t:"success",m:"Membro criado! Senha temporária enviada para "+e+". No primeiro acesso ele deverá definir uma nova senha."});
-      }catch(err){setMsg({t:"error",m:"Erro: "+err.message});setLoading(false);return}
-    }else{
-      // Membro sem login (apenas label)
-      const m={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:null,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
+    const e=memberEmail.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){setMsg({t:"error",m:"E-mail inválido"});setLoading(false);return}
+    if(members.some(m=>m.memberEmail===e)){setMsg({t:"error",m:"E-mail já cadastrado como membro"});setLoading(false);return}
+    const{getAccount}=await import("../db");
+    const existing=await getAccount(e);
+    if(existing){setMsg({t:"error",m:"E-mail já cadastrado no sistema"});setLoading(false);return}
+    const pass=generatePassword();
+    try{
+      await sendPasswordEmail(memberName.trim(),e,pass);
+      await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
+      const m={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
       await saveMember(m);
-    }
+      setMsg({t:"success",m:"Membro criado! Senha temporária enviada para "+e+". No primeiro acesso ele deverá definir uma nova senha."});
+    }catch(err){setMsg({t:"error",m:"Erro: "+err.message});setLoading(false);return}
     setMemberModal(false);setMemberName("");setMemberEmail("");
     setLoading(false);await reload();
   };
@@ -147,8 +142,8 @@ export default function Groups({user}){
 
     <Modal open={memberModal} onClose={()=>setMemberModal(false)} title={"Novo Membro — "+(selGroup?.name||"")}>
       <Input label="Nome" value={memberName} onChange={e=>setMemberName(e.target.value)} placeholder="Ex: João, Maria..."/>
-      <Input label="E-mail (opcional)" type="email" value={memberEmail} onChange={e=>setMemberEmail(e.target.value)} placeholder="email@exemplo.com"/>
-      {memberEmail.trim()&&<p style={{color:"#888",fontSize:12,margin:"4px 0 8px"}}>Uma senha temporária será enviada para este e-mail. No primeiro acesso, o usuário deverá definir uma nova senha.</p>}
+      <Input label="E-mail" type="email" value={memberEmail} onChange={e=>setMemberEmail(e.target.value)} placeholder="email@exemplo.com"/>
+      <p style={{color:"#888",fontSize:12,margin:"-8px 0 8px"}}>Uma senha temporária será enviada para este e-mail. No primeiro acesso, o usuário deverá definir uma nova senha.</p>
       {msg&&<div style={{color:msg.t==="error"?"#ef4444":"#22c55e",fontSize:12,marginBottom:8}}>{msg.m}</div>}
       <Btn onClick={saveM} disabled={loading}>{loading?"Criando...":"Adicionar Membro"}</Btn>
     </Modal>

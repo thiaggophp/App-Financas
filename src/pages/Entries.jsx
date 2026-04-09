@@ -1,5 +1,5 @@
 import{useState,useEffect}from"react";
-import{getEntries,saveEntry,deleteEntry,getMembers,getGroups}from"../db";
+import{getEntries,saveEntry,deleteEntry,getMembers,getGroups,getMemberByEmail}from"../db";
 import{Btn,Input,Select}from"../components/FormElements";
 import Modal from"../components/Modal";import Card from"../components/Card";
 
@@ -11,19 +11,32 @@ function fmtDate(s){if(!s)return"";const[y,m,d]=s.split("-");return`${d}/${m}/${
 const TODAY=new Date().toISOString().slice(0,10);
 
 export default function Entries({user}){
+  const isSubUser=!!user.parentEmail;
+  const ownerEmail=user.parentEmail||user.email;
   const[entries,setEntries]=useState([]);const[members,setMembers]=useState([]);
+  const[groups,setGroups]=useState([]);const[myGroupId,setMyGroupId]=useState("");
   const[modal,setModal]=useState(false);const[filter,setFilter]=useState("all");
   const[budgetModal,setBudgetModal]=useState(false);
   const[budgets,setBudgets]=useState(()=>{try{return JSON.parse(localStorage.getItem("financas_budgets")||"{}")}catch{return{}}});
   const[budgetForm,setBudgetForm]=useState({});
   const now=new Date();const[month,setMonth]=useState(now.getMonth());const[year,setYear]=useState(now.getFullYear());
   const[busca,setBusca]=useState("");
-  const[form,setForm]=useState({type:"despesa",category:"Mercado",value:"",description:"",memberId:"",date:TODAY,split:false,recorrente:false});
+  const[form,setForm]=useState({type:"despesa",category:"Mercado",value:"",description:"",memberId:"",groupId:"",date:TODAY,split:false,recorrente:false});
   const[edit,setEdit]=useState(null);
   const[quitarEntry,setQuitarEntry]=useState(null);const[paidDate,setPaidDate]=useState(TODAY);
   const[deleteConfirm,setDeleteConfirm]=useState(null);
 
-  const reload=async()=>{setEntries(await getEntries(user.email));setMembers(await getMembers(user.email))};
+  const reload=async()=>{
+    const gs=await getGroups(ownerEmail);setGroups(gs);
+    const ms=await getMembers(ownerEmail);setMembers(ms);
+    if(isSubUser){
+      const memberRec=await getMemberByEmail(user.email);
+      const gid=memberRec?.groupId||"";setMyGroupId(gid);
+      setEntries(await getEntries(ownerEmail,gid));
+    }else{
+      setEntries(await getEntries(ownerEmail));
+    }
+  };
   useEffect(()=>{reload()},[user.email]);
 
   const monthKey=year+"-"+String(month+1).padStart(2,"0");
@@ -71,12 +84,12 @@ export default function Entries({user}){
   const totReceita=filtered.filter(e=>e.type==="receita").reduce((s,e)=>s+e.value,0);
   const totDespesa=filtered.filter(e=>e.type==="despesa").reduce((s,e)=>s+e.value,0);
 
-  const openNew=()=>{setEdit(null);setForm({type:"despesa",category:"Mercado",value:"",description:"",memberId:members[0]?.id||"",date:TODAY,split:false});setModal(true)};
+  const openNew=()=>{setEdit(null);setForm({type:"despesa",category:"Mercado",value:"",description:"",memberId:members[0]?.id||"",groupId:myGroupId||groups[0]?.id||"",date:TODAY,split:false,recorrente:false});setModal(true)};
   const openEdit=(e)=>{setEdit(e);setForm({...e,value:String(e.value)});setModal(true)};
 
   const save=async()=>{
     if(!form.value||!form.category)return;const val=parseFloat(form.value);if(isNaN(val)||val<=0)return;
-    const base={...form,value:val,ownerEmail:user.email};
+    const base={...form,value:val,ownerEmail};
     if(form.split&&members.length>=2){
       const half=Math.round(val/2*100)/100;
       for(let i=0;i<2&&i<members.length;i++){
@@ -211,6 +224,7 @@ export default function Entries({user}){
       <Input label="Valor (R$)" type="number" value={form.value} onChange={e=>setForm({...form,value:e.target.value})} placeholder="0,00" inputMode="decimal"/>
       <Input label="Descrição" value={form.description||""} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Opcional"/>
       {members.length>0&&<Select label="Membro" value={form.memberId} onChange={e=>setForm({...form,memberId:e.target.value})} options={[{value:"",label:"— Nenhum —"},...members.map(m=>({value:m.id,label:m.name}))]}/>}
+      {groups.length>0&&<Select label="Grupo" value={form.groupId} onChange={e=>setForm({...form,groupId:e.target.value})} options={[{value:"",label:"— Nenhum —"},...groups.map(g=>({value:g.id,label:g.name}))]} disabled={isSubUser}/>}
       <Input label="Data" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
       {members.length>=2&&<label style={{display:"flex",alignItems:"center",gap:8,color:"#94a3b8",fontSize:13,marginBottom:12,cursor:"pointer"}}>
         <input type="checkbox" checked={form.split||false} onChange={e=>setForm({...form,split:e.target.checked})}/> Dividir 50/50 entre membros

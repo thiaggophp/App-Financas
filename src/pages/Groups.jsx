@@ -44,14 +44,10 @@ export default function Groups({user}){
     setLoading(true);setMsg(null);
     const e=memberEmail.trim().toLowerCase();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){setMsg({t:"error",m:"E-mail inválido"});setLoading(false);return}
+    if(e===user.email.toLowerCase()){setMsg({t:"error",m:"Você não pode se adicionar como membro do próprio grupo"});setLoading(false);return}
     if(members.some(m=>m.memberEmail===e)){setMsg({t:"error",m:"E-mail já cadastrado como membro neste grupo"});setLoading(false);return}
     const mRec={ownerEmail:user.email,groupId:selGroup.id,name:memberName.trim(),memberEmail:e,color:COLORS[(members.length+1)%COLORS.length],createdAt:new Date().toISOString()};
-    // Se for o próprio dono, só cria o registro de membro (conta já existe)
-    const isSelf=e===user.email.toLowerCase();
-    if(isSelf){
-      await saveMember(mRec);
-      setMsg({t:"success",m:"Você foi adicionado como membro do grupo "+selGroup.name+"!"});
-    }else{
+    {
       const{getAccount}=await import("../db");
       const existing=await getAccount(e);
       // Bloqueia somente se a conta pertence a outro dono (não é sub-usuário deste)

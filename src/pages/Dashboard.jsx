@@ -3,7 +3,7 @@ import{getEntries,getGoals,getGroups,getMembers,getMemberByEmail}from"../db";
 import Card from"../components/Card";
 
 const MONTHS=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-function fmt(v){return(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}
+function fmt(v){return(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 const ICONS={"Salário":"💼","Freelance":"💻","Aluguel":"🏠","Investimento":"📈","Moradia":"🏠","Alimentação":"🍽️","Transporte":"🚗","Saúde":"💊","Educação":"📚","Lazer":"🎮","Vestuário":"👕","Contas":"💡","Mercado":"🛒","Pets":"🐾","Assinaturas":"📺","Outros":"📦"};
 
 export default function Dashboard({user}){

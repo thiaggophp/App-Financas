@@ -14,6 +14,7 @@ export default function Admin({currentUser}){
   const[deleteModal,setDeleteModal]=useState(null);const[blockModal,setBlockModal]=useState(null);
   const[newName,setNewName]=useState("");const[newEmail,setNewEmail]=useState("");
   const[newPass,setNewPass]=useState("");const[msg,setMsg]=useState(null);const[loading,setLoading]=useState(false);
+  const[memberModal,setMemberModal]=useState(null);const[memberOwner,setMemberOwner]=useState("");
 
   const load=async()=>{
     const all=await getAllAccounts();
@@ -67,6 +68,18 @@ export default function Admin({currentUser}){
     await deleteUserCascade(acc.email);setDeleteModal(null);await load();
   };
 
+  const handleConvertToMember=async()=>{
+    if(!memberOwner){setMsg({t:"error",m:"Selecione o dono"});return}
+    setLoading(true);
+    try{
+      const acc={...memberModal,parentEmail:memberOwner};
+      await saveAccount(acc);
+      setMsg({t:"success",m:`${memberModal.name} agora é membro de ${accounts.find(a=>a.email===memberOwner)?.name||memberOwner}`});
+      setMemberModal(null);setMemberOwner("");await load();
+    }catch(err){setMsg({t:"error",m:"Erro: "+err.message})}
+    setLoading(false);
+  };
+
   const handleChangePassword=async()=>{
     if(!newPass||newPass.length<6){setMsg({t:"error",m:"Senha deve ter pelo menos 6 caracteres"});return}
     setLoading(true);
@@ -110,6 +123,8 @@ export default function Admin({currentUser}){
             <div style={{display:"flex",gap:6}}>
               <button onClick={()=>{setPassModal(a);setNewPass("");setMsg(null)}}
                 style={{background:"rgba(124,58,237,.1)",border:"1px solid rgba(124,58,237,.25)",borderRadius:8,padding:"7px 9px",fontSize:13,color:"#a78bfa",cursor:"pointer"}}>🔑</button>
+              {!a.protected&&!isSelf&&a.role!=="admin"&&<button onClick={()=>{setMemberModal(a);setMemberOwner("");setMsg(null)}} title="Tornar membro"
+                style={{background:"rgba(14,165,233,.1)",border:"1px solid rgba(14,165,233,.25)",borderRadius:8,padding:"7px 9px",fontSize:13,color:"#38bdf8",cursor:"pointer"}}>👤→</button>}
               {!a.protected&&!isSelf&&<button onClick={()=>setBlockModal(a)}
                 style={{background:a.status==="active"?"rgba(245,158,11,.1)":"rgba(34,197,94,.1)",border:"1px solid "+(a.status==="active"?"rgba(245,158,11,.25)":"rgba(34,197,94,.25)"),borderRadius:8,padding:"7px 9px",fontSize:13,color:a.status==="active"?"#f59e0b":"#22c55e",cursor:"pointer"}}>
                 {a.status==="active"?"🚫":"✅"}
@@ -165,6 +180,28 @@ export default function Admin({currentUser}){
           <Btn onClick={()=>handleBlock(blockModal)} color={blockModal.status==="active"?"linear-gradient(135deg,#f59e0b,#d97706)":"linear-gradient(135deg,#22c55e,#16a34a)"} style={{flex:1}}>
             {blockModal.status==="active"?"Bloquear":"Desbloquear"}
           </Btn>
+        </div>
+      </>}
+    </Modal>
+
+    {/* Modal: tornar membro */}
+    <Modal open={!!memberModal} onClose={()=>setMemberModal(null)} title={"Tornar Membro — "+(memberModal?.name||"")}>
+      {memberModal&&<>
+        <p style={{color:"#94a3b8",fontSize:13,marginBottom:16}}>Selecione o usuário que será o <strong style={{color:"#f1f5f9"}}>dono</strong> de {memberModal.name}. Após isso, o dono poderá adicioná-lo a um grupo na página Grupos.</p>
+        <div style={{marginBottom:16}}>
+          <label style={{display:"block",color:"#64748b",fontSize:11,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:.8}}>Dono</label>
+          <select value={memberOwner} onChange={e=>setMemberOwner(e.target.value)}
+            style={{width:"100%",padding:"13px 16px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,color:memberOwner?"#f1f5f9":"#64748b",fontSize:15,outline:"none",boxSizing:"border-box",WebkitAppearance:"none",appearance:"none",colorScheme:"dark"}}>
+            <option value="" style={{background:"#0e0e24"}}>— Selecione o dono —</option>
+            {accounts.filter(a=>a.email!==memberModal.email&&a.role!=="admin").map(a=>
+              <option key={a.email} value={a.email} style={{background:"#0e0e24",color:"#f1f5f9"}}>{a.name} ({a.email})</option>
+            )}
+          </select>
+        </div>
+        {msg&&<div style={{color:msg.t==="error"?"#ef4444":"#22c55e",fontSize:12,marginBottom:8}}>{msg.m}</div>}
+        <div style={{display:"flex",gap:8}}>
+          <Btn onClick={()=>setMemberModal(null)} color="rgba(255,255,255,0.06)" style={{flex:1,border:"1px solid rgba(255,255,255,0.08)",color:"#94a3b8"}}>Cancelar</Btn>
+          <Btn onClick={handleConvertToMember} disabled={loading||!memberOwner} color="linear-gradient(135deg,#0ea5e9,#0369a1)" style={{flex:1}}>{loading?"Salvando...":"Confirmar"}</Btn>
         </div>
       </>}
     </Modal>

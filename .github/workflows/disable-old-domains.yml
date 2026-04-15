@@ -27,9 +27,23 @@ jobs:
             }
             server {
                 listen 443 ssl;
-                server_name financascasa.online www.financascasa.online financas.financascasa.online api.financascasa.online;
+                server_name financascasa.online www.financascasa.online api.financascasa.online;
                 ssl_certificate /etc/letsencrypt/live/financascasa.online/fullchain.pem;
                 ssl_certificate_key /etc/letsencrypt/live/financascasa.online/privkey.pem;
+                include /etc/letsencrypt/options-ssl-nginx.conf;
+                ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+                return 404;
+            }
+            server {
+                listen 80;
+                server_name financas.financascasa.online;
+                return 301 https://financas.financascasa.online$request_uri;
+            }
+            server {
+                listen 443 ssl;
+                server_name financas.financascasa.online;
+                ssl_certificate /etc/letsencrypt/live/financas.financascasa.online/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/financas.financascasa.online/privkey.pem;
                 include /etc/letsencrypt/options-ssl-nginx.conf;
                 ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
                 return 404;

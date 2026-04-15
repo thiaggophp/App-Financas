@@ -1,0 +1,43 @@
+name: Nginx — financascasa.online retorna 404
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar financascasa.online para retornar 404
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cat > /etc/nginx/sites-available/financascasa-root << 'NGINXEOF'
+            server {
+                listen 80;
+                server_name financascasa.online www.financascasa.online;
+                return 301 https://financascasa.online$request_uri;
+            }
+            server {
+                listen 443 ssl;
+                server_name financascasa.online www.financascasa.online;
+                ssl_certificate /etc/letsencrypt/live/financascasa.online/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/financascasa.online/privkey.pem;
+                include /etc/letsencrypt/options-ssl-nginx.conf;
+                ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+                return 404;
+            }
+            NGINXEOF
+
+            # Remove o domínio raiz de qualquer config antiga que o inclua
+            # (mantém financas., api., mail., gado., obras., outdoor. intactos)
+            if grep -q "server_name financascasa.online" /etc/nginx/sites-available/financascasa 2>/dev/null; then
+              sed -i '/server_name financascasa.online/d' /etc/nginx/sites-available/financascasa
+              sed -i '/server_name www.financascasa.online/d' /etc/nginx/sites-available/financascasa
+            fi
+
+            ln -sf /etc/nginx/sites-available/financascasa-root /etc/nginx/sites-enabled/financascasa-root
+            nginx -t && systemctl reload nginx
+            echo "OK — financascasa.online agora retorna 404"

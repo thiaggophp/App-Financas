@@ -1,0 +1,59 @@
+name: Backup Diário PocketBase → Google Drive
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 00:00 BRT (UTC-3)
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configurar rclone
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONF_B64 }}" | base64 -d > ~/.config/rclone/rclone.conf
+
+      - name: Autenticar PocketBase
+        run: |
+          AUTH=$(curl -sf -X POST "https://api.financascasa.online/api/admins/auth-with-password" \
+            -H "Content-Type: application/json" \
+            -d "{\"identity\":\"${{ secrets.PB_ADMIN_EMAIL }}\",\"password\":\"${{ secrets.PB_ADMIN_PASSWORD }}\"}")
+          TOKEN=$(echo "$AUTH" | jq -r '.token')
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Erro: falha na autenticação PocketBase"
+            exit 1
+          fi
+          echo "PB_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Criar backup no PocketBase
+        run: |
+          BACKUP_NAME="financas-$(date +%Y%m%d-%H%M%S).zip"
+          echo "BACKUP_NAME=$BACKUP_NAME" >> $GITHUB_ENV
+          curl -sf -X POST "https://api.financascasa.online/api/backups" \
+            -H "Authorization: $PB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"$BACKUP_NAME\"}"
+          sleep 15
+
+      - name: Baixar backup
+        run: |
+          curl -sf -L -o "backup.zip" \
+            "https://api.financascasa.online/api/backups/$BACKUP_NAME" \
+            -H "Authorization: $PB_TOKEN"
+          SIZE=$(wc -c < backup.zip)
+          echo "Backup baixado: $SIZE bytes"
+
+      - name: Upload para Google Drive
+        run: |
+          FOLDER="financascasa-backups/$(date +%Y/%m)"
+          rclone copy backup.zip "gdrive:$FOLDER/" --progress
+          echo "✓ Backup enviado: $FOLDER/$BACKUP_NAME"
+
+      - name: Limpar backups com mais de 30 dias
+        run: |
+          rclone delete "gdrive:financascasa-backups/" --min-age 31d
+          echo "✓ Limpeza de backups antigos concluída"

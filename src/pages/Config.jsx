@@ -82,7 +82,7 @@ export default function Config({user,onUpdate}){
     <div style={{background:"#111127",borderRadius:18,padding:"18px",marginBottom:12,border:"1px solid rgba(255,255,255,0.06)"}}>
       <div style={{color:"#64748b",fontSize:11,fontWeight:700,letterSpacing:.8,marginBottom:10}}>SOBRE O APP</div>
       <div style={{color:"#475569",fontSize:13,lineHeight:1.8}}>
-        <div>💰 Finanças Casa v1.0</div>
+        <div>💰 Finanças Casa v1.1</div>
         <div>Controle financeiro doméstico compartilhado</div>
         <div style={{marginTop:8,color:"#334155"}}>Receitas/despesas, grupos e membros, metas de economia, orçamento por categoria, relatórios, backup</div>
       </div>

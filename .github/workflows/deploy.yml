@@ -19,6 +19,8 @@ jobs:
             git pull
             npm install
             npm run build
+            BUILD_TS=$(date +%s)
+            sed -i "s/const CACHE=\"[^\"]*\"/const CACHE=\"financas-${BUILD_TS}\"/" dist/sw.js
             cp -r dist/* /var/www/html/
             systemctl reload nginx
-            echo "Deploy concluído!"
+            echo "Deploy concluído! Cache SW: financas-${BUILD_TS}"

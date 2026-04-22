@@ -65,15 +65,15 @@ export default function Login({onLogin}){
 
       {msg&&<div style={{padding:"11px 14px",borderRadius:12,marginBottom:18,fontSize:13,background:msg.t==="success"?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",color:msg.t==="success"?"#22c55e":"#ef4444",border:"1px solid "+(msg.t==="success"?"rgba(34,197,94,.2)":"rgba(239,68,68,.2)")}}>{msg.m}</div>}
 
-      {mode==="login"&&<form onSubmit={e=>{e.preventDefault();handleLogin()}} autoComplete="on">
-        <Input label="E-mail" type="email" name="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" autoComplete="email"/>
-        <Input label="Senha" type="password" name="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha" autoComplete="current-password"/>
-        <Btn type="submit" disabled={loading}>{loading?"Entrando...":"Entrar"}</Btn>
+      {mode==="login"&&<>
+        <Input label="E-mail" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com"/>
+        <Input label="Senha" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+        <Btn onClick={handleLogin} disabled={loading}>{loading?"Entrando...":"Entrar"}</Btn>
         <div style={{display:"flex",justifyContent:"space-between",marginTop:18}}>
-          <button type="button" onClick={()=>{setMode("reset");setMsg(null)}} style={{background:"none",border:"none",color:"#7c3aed",fontSize:13,cursor:"pointer",fontWeight:500}}>Esqueci a senha</button>
-          <button type="button" onClick={()=>{setMode("signup");setMsg(null)}} style={{background:"none",border:"none",color:"#7c3aed",fontSize:13,cursor:"pointer",fontWeight:500}}>Solicitar Cadastro</button>
+          <button onClick={()=>{setMode("reset");setMsg(null)}} style={{background:"none",border:"none",color:"#7c3aed",fontSize:13,cursor:"pointer",fontWeight:500}}>Esqueci a senha</button>
+          <button onClick={()=>{setMode("signup");setMsg(null)}} style={{background:"none",border:"none",color:"#7c3aed",fontSize:13,cursor:"pointer",fontWeight:500}}>Solicitar Cadastro</button>
         </div>
-      </form>}
+      </>}
 
       {mode==="reset"&&<>
         <p style={{color:"#64748b",fontSize:13,marginBottom:18,lineHeight:1.5}}>Digite seu e-mail cadastrado para receber uma nova senha.</p>

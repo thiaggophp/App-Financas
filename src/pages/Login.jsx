@@ -67,7 +67,7 @@ export default function Login({onLogin}){
 
       {mode==="login"&&<>
         <Input label="E-mail" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com"/>
-        <Input label="Senha" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+        <Input label="Senha" type="password" autoComplete="off" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
         <Btn onClick={handleLogin} disabled={loading}>{loading?"Entrando...":"Entrar"}</Btn>
         <div style={{display:"flex",justifyContent:"space-between",marginTop:18}}>
           <button onClick={()=>{setMode("reset");setMsg(null)}} style={{background:"none",border:"none",color:"#7c3aed",fontSize:13,cursor:"pointer",fontWeight:500}}>Esqueci a senha</button>

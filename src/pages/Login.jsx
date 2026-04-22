@@ -58,7 +58,7 @@ export default function Login({onLogin}){
   return(<div style={{minHeight:"100vh",background:"#0a0a1a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,animation:"fadeIn .4s ease"}}>
     <div style={{width:"100%",maxWidth:380}}>
       <div style={{textAlign:"center",marginBottom:36}}>
-        <div style={{width:76,height:76,borderRadius:22,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:34,boxShadow:"0 12px 40px rgba(124,58,237,.4)"}}>💰</div>
+        <div style={{width:80,height:80,borderRadius:24,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:38,boxShadow:"0 12px 40px rgba(124,58,237,.4)"}}>💰</div>
         <h1 style={{fontSize:30,fontWeight:800,background:"linear-gradient(135deg,#c4b5fd,#7c3aed)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",margin:"0 0 4px",letterSpacing:-.5}}>Finanças</h1>
         <p style={{color:"#475569",fontSize:13,margin:0}}>Controle financeiro inteligente</p>
       </div>

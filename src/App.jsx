@@ -88,7 +88,7 @@ export default function App(){
 
   if(!ready)return(<div style={{minHeight:"100vh",background:"#0a0a1a",display:"flex",alignItems:"center",justifyContent:"center"}}>
     <div style={{textAlign:"center"}}>
-      <div style={{width:56,height:56,borderRadius:18,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:28,boxShadow:"0 8px 32px rgba(124,58,237,.4)"}}>💰</div>
+      <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:32,boxShadow:"0 12px 40px rgba(124,58,237,.4)"}}>💰</div>
       <div style={{color:"#7c3aed",fontSize:14,animation:"pulse 1.2s infinite",fontWeight:600}}>Carregando...</div>
     </div>
   </div>);

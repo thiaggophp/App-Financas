@@ -38,6 +38,8 @@ export default function Entries({user}){
     }
   };
   useEffect(()=>{reload()},[user.email]);
+  useEffect(()=>{const s=localStorage.getItem("financas_entry_form");if(s)try{setForm(f=>({...f,...JSON.parse(s)}))}catch{}},[]);
+  useEffect(()=>{if(!edit)try{localStorage.setItem("financas_entry_form",JSON.stringify(form))}catch{}},[form,edit]);
 
   const monthKey=year+"-"+String(month+1).padStart(2,"0");
   const filtered=entries.filter(e=>e.date&&e.date.startsWith(monthKey)).filter(e=>{
@@ -102,7 +104,7 @@ export default function Entries({user}){
       if(edit)base.id=edit.id;
       await saveEntry(base);
     }
-    setModal(false);await reload();
+    localStorage.removeItem("financas_entry_form");setModal(false);await reload();
   };
 
   const confirmQuitar=async()=>{

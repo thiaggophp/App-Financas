@@ -13,6 +13,8 @@ export default function Goals({user}){
 
   const reload=async()=>setGoals(await getGoals(user.email));
   useEffect(()=>{reload()},[user.email]);
+  useEffect(()=>{const s=localStorage.getItem("financas_goal_form");if(s)try{setForm(f=>({...f,...JSON.parse(s)}))}catch{}},[]);
+  useEffect(()=>{if(!edit)try{localStorage.setItem("financas_goal_form",JSON.stringify(form))}catch{}},[form,edit]);
 
   const openNew=()=>{setEdit(null);setForm({name:"",target:"",saved:0});setModal(true)};
   const openEdit=(g)=>{setEdit(g);setForm({name:g.name,target:String(g.target),saved:g.saved});setModal(true)};
@@ -21,7 +23,7 @@ export default function Goals({user}){
     if(!form.name||!form.target)return;
     const g={ownerEmail:user.email,name:form.name,target:parseFloat(form.target)||0,saved:parseFloat(form.saved)||0};
     if(edit)g.id=edit.id;
-    await saveGoal(g);setModal(false);await reload();
+    await saveGoal(g);localStorage.removeItem("financas_goal_form");setModal(false);await reload();
   };
 
   const addAmount=async()=>{

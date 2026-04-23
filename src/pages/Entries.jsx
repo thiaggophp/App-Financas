@@ -91,8 +91,10 @@ export default function Entries({user}){
   const openNew=()=>{setEdit(null);setForm({type:"despesa",category:"Mercado",value:"",description:"",memberId:members.find(m=>m.memberEmail===user.email)?.id||"",groupId:myGroupId||groups[0]?.id||"",date:TODAY,split:false,recorrente:false});setModal(true)};
   const openEdit=(e)=>{setEdit(e);setForm({...e,value:String(e.value)});setModal(true)};
 
+  const[saving,setSaving]=useState(false);
   const save=async()=>{
-    if(!form.value||!form.category)return;const val=parseFloat(form.value);if(isNaN(val)||val<=0)return;
+    if(saving||!form.value||!form.category)return;const val=parseFloat(form.value);if(isNaN(val)||val<=0)return;
+    setSaving(true);
     const base={...form,value:val,ownerEmail};
     if(form.split&&members.length>=2){
       const half=Math.round(val/2*100)/100;
@@ -104,7 +106,7 @@ export default function Entries({user}){
       if(edit)base.id=edit.id;
       await saveEntry(base);
     }
-    localStorage.removeItem("financas_entry_form");setModal(false);await reload();
+    localStorage.removeItem("financas_entry_form");setModal(false);await reload();setSaving(false);
   };
 
   const confirmQuitar=async()=>{

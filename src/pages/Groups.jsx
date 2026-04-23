@@ -57,8 +57,8 @@ export default function Groups({user}){
       if(!existing){
         const pass=generatePassword();
         try{
-          await sendPasswordEmail(memberName.trim(),e,pass);
           await saveAccount({email:e,name:memberName.trim(),password:pass,role:"user",status:"active",createdAt:new Date().toISOString(),mustChangePassword:true,protected:false,parentEmail:user.email});
+          await sendPasswordEmail(memberName.trim(),e,pass);
         }catch(err){setMsg({t:"error",m:"Erro ao enviar e-mail: "+err.message});setLoading(false);return}
         setMsg({t:"success",m:"Membro criado! Senha temporária enviada para "+e+"."});
       }else{

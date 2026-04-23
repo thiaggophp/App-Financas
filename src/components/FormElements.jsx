@@ -5,7 +5,7 @@ export function InputMoney({label,value,onChange,style,...props}){
   useEffect(()=>{
     if(!focused.current){
       const n=parseFloat(String(value??"").replace(",","."));
-      setLocal(n>0?n.toFixed(2).replace(".",","):"");
+      setLocal(n>=0?n.toFixed(2).replace(".",","):"");
     }
   },[value]);
   const handleChange=(e)=>{
@@ -19,9 +19,9 @@ export function InputMoney({label,value,onChange,style,...props}){
     focused.current=false;
     e.target.style.borderColor="rgba(255,255,255,0.08)";e.target.style.boxShadow="none";
     const n=parseFloat(local.replace(",","."));
-    const fmt=(!isNaN(n)&&n>0)?n.toFixed(2).replace(".",","):"";
+    const fmt=(!isNaN(n)&&n>=0)?n.toFixed(2).replace(".",","):"";
     setLocal(fmt);
-    onChange({target:{value:(!isNaN(n)&&n>0)?n.toFixed(2):""}});
+    onChange({target:{value:(!isNaN(n)&&n>=0)?n.toFixed(2):""}});
   };
   return(<div style={{marginBottom:16}}>
     {label&&<label style={{display:"block",color:"#64748b",fontSize:11,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:.8}}>{label}</label>}
